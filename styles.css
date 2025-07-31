@@ -1,3 +1,168 @@
+
 body{
-    background-color: bisque;
+    background-color: black;
+    color: aqua;
+    font-family: 'Courier New', Courier, monospace;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+}
+
+h1 {
+    font-size: 2.5em;
+    margin-top: 100px;
+    margin-bottom: 20px;
+    font-size: 3rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+p{
+    font-size: 1.2em;
+    margin: 10px 0;
+    text-align: center;
+    }
+
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+li {
+    margin: 10px 0;
+    padding: 10px;
+}
+
+.wrapper {
+    max-width: 800px;
+    width: 100%;
+    background-color: #222;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+#todo-input{
+    box-sizing: border-box;
+    width: 100%;
+    border: none;
+    border-radius: 15px;
+    background-color: #333;
+    color: aqua;
+    font-size: 1em;
+    padding: 10px 15px;
+}
+
+#todo-input:focus {
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 255, 255, 0.7);
+}
+
+form{
+    position: relative;
+}
+
+#add-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 0px 30px;
+    background-color: #444;
+    color: aqua;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 10px;
+    height: 100%;
+}
+
+.todo {
+    background-color: #333;
+    border-radius: 4px;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.todo .todo-text {
+    flex-grow: 1;
+    padding: 20px;
+    padding-right: 0;
+}   
+
+.delete-button {
+    background: none;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.delete-button svg {
+    width: 20px;
+    height: 20px;
+    transition: 200ms ease-in-out;
+}
+
+.delete-button:hover svg{
+    fill: red;
+}
+
+.custom-checkbox {
+    border: 2px solid aqua;
+    border-radius: 50%;
+    width: 15px;
+    height: 15px;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+input[type="checkbox"]:checked ~ .custom-checkbox {
+    background-color: aqua;
+}
+
+input[type="checkbox"]:checked ~ .custom-checkbox svg{
+ fill: #222;
+}
+
+input[type="checkbox"]:checked ~ .todo-text {
+    text-decoration: line-through;
+    color: #555;
+}
+
+input[type="checkbox"] {
+    display: none;
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+
+    .wrapper {
+        width: 80%;
+        padding: 15px;
+        margin: 20px 0;
+    }
+
+    h1 {
+        font-size: 2em;
+    }
+
+    p, li {
+        font-size: 14px;
+    }
+
+    #add-button {
+        padding: 0px 20px;
+        font-size: 8px;
+    }
 }

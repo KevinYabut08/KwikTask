@@ -4,9 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
     <title>KwikTask</title>
 </head>
 <body>
-    
+      <img src="logo.png" alt="KwikTask Logo" class="logo">
+    <h1>Welcome to KwikTask</h1>
+    <div class="wrapper">
+    <p>Your one-stop solution for task management.</p>
+    <form>
+        <input id="todo-input" type="text" placeholder="Enter your task here" required>
+        <button id="add-button"  type="submit">ADD</button>
+    </form>
+    <ul id="todo-list">
+        <li class="todo">
+            <input type ="checkbox" id="todo-2">
+            <label for="todo-2" class="custom-checkbox">
+            <svg fill="transparent" class="todo-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                <path fill="none" d="M0 0h24v24H0z"/>
+                <path d="M9 16.17L4.83 12l-1.41 1.41L9 19 21.59 6.41l-1.41-1.41L9 16.17z"/>
+            </svg>
+            </label>
+            <span class="todo-text">Sample Task</span>
+            <button class="delete-button" type="button">
+               <svg fill="grey" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                   <path fill="none" d="M0 0h24v24H0z"/>
+                   <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2-14h8V3H8v2zM4 7v2h16V7H4z"/>
+               </svg>
+            </button>
+        </li>
+    </ul>
+</div>
 </body>
 </html>
