@@ -11,6 +11,11 @@ body{
     min-height: 100vh;
 }
 
+.logo{
+    max-width: 200px;
+    margin-top: 50px;
+}
+
 h1 {
     font-size: 2.5em;
     margin-top: 100px;
@@ -145,6 +150,11 @@ input[type="checkbox"] {
 @media (max-width: 600px) {
     body {
         padding: 10px;
+    }
+
+
+    .logo {
+        max-width: 150px;
     }
 
     .wrapper {
