@@ -11,6 +11,7 @@ body{
     min-height: 100vh;
 }
 
+
 .logo{
     max-width: 200px;
     margin-top: 50px;
@@ -69,6 +70,17 @@ li {
 
 form{
     position: relative;
+}
+
+.btn{
+    padding: 10px;
+    background-color: #444;
+    color: aqua;
+    border: solid 1px aqua;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 10px;
+    height: 100%;
 }
 
 #add-button {
