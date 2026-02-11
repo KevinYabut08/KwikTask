@@ -1,5 +1,6 @@
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const auth = window.auth;
 const db = window.db;
@@ -27,6 +28,7 @@ const modal = document.getElementById("stripeModal");
 const successModal = document.getElementById("successModal");
 const closeSuccessModal = document.getElementById("closeSuccessModal");
 const continueBtn = document.getElementById("continueBtn");
+const logoutBtn = document.getElementById("logoutBtn");
 
 // ===== STATE =====
 let allToDos = [];
@@ -46,6 +48,20 @@ onAuthStateChanged(auth, async (user) => {
 
     init();
 });
+
+// ================= LOGOUT =================
+async function handleLogout() {
+    try {
+        await signOut(auth);
+        // Clear local storage
+        localStorage.removeItem(TODO_STORAGE_KEY);
+        // Redirect to login page
+        window.location.href = "/login.html";
+    } catch (error) {
+        console.error("Logout error:", error);
+        alert("Failed to log out. Please try again.");
+    }
+}
 
 // ================= INIT =================
 function init() {
@@ -234,6 +250,11 @@ function attachEventListeners() {
         e.preventDefault();
         addToDo();
     });
+
+    // Logout button
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", handleLogout);
+    }
 
     // Stripe modal
     document.getElementById("subscribeBtn")?.addEventListener("click", () => {
