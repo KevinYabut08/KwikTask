@@ -88,10 +88,14 @@ function showUpgradePromptIfNeeded() {
             upgradePrompt.style.display = "flex";
             toDoInput.disabled = true;
             addButton.disabled = true;
+            toDoInput.classList.add("disabled");
+            addButton.classList.add("disabled");
         } else {
             upgradePrompt.style.display = "none";
             toDoInput.disabled = false;
             addButton.disabled = false;
+            toDoInput.classList.remove("disabled");
+            addButton.classList.remove("disabled");
         }
     }
 }
@@ -108,14 +112,19 @@ function saveTodos() {
 
 function addToDo() {
     if (!canAddTask()) {
-        alert("Free plan limit reached. Upgrade to Pro.");
+        alert("✨ Free plan limit reached. Upgrade to Pro for unlimited tasks!");
         return;
     }
 
     const text = toDoInput.value.trim();
     if (!text) return;
 
-    allToDos.push({ id: Date.now().toString(), text, completed: false });
+    allToDos.push({ 
+        id: Date.now().toString(), 
+        text, 
+        completed: false 
+    });
+    
     toDoInput.value = "";
     saveTodos();
     updateToDoList();
@@ -125,7 +134,10 @@ function updateToDoList() {
     toDoList.innerHTML = "";
 
     if (allToDos.length === 0) {
-        toDoList.innerHTML = `<li class="todo empty-state">no tasks yet</li>`;
+        const emptyLi = document.createElement("li");
+        emptyLi.className = "todo empty-state";
+        emptyLi.innerHTML = `<span style="color: #999; padding: 20px; text-align: center; width: 100%;">no tasks yet · add one above</span>`;
+        toDoList.append(emptyLi);
     } else {
         allToDos.forEach(todo => toDoList.append(createToDoItem(todo)));
     }
@@ -138,24 +150,40 @@ function updateToDoList() {
 function createToDoItem(todo) {
     const li = document.createElement("li");
     li.className = "todo";
+    
+    const todoId = `todo-${todo.id}`;
 
     li.innerHTML = `
-        <input type="checkbox" ${todo.completed ? "checked" : ""}>
-        <span>${escapeHTML(todo.text)}</span>
-        <button>🗑</button>
+        <input type="checkbox" id="${todoId}" ${todo.completed ? "checked" : ""}>
+        <label for="${todoId}" class="custom-checkbox">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M9 16.17L4.83 12l-1.41 1.41L9 19 21.59 6.41l-1.41-1.41L9 16.17z"/>
+            </svg>
+        </label>
+        <span class="todo-text">${escapeHTML(todo.text)}</span>
+        <button class="delete-button">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2-14h8V3H8v2zM4 7v2h16V7H4z"/>
+            </svg>
+        </button>
     `;
 
-    li.querySelector("input").onchange = () => {
-        todo.completed = !todo.completed;
+    // Checkbox handler
+    const checkbox = li.querySelector("input");
+    checkbox.addEventListener("change", () => {
+        todo.completed = checkbox.checked;
         saveTodos();
         updateToDoList();
-    };
+    });
 
-    li.querySelector("button").onclick = () => {
+    // Delete button handler
+    const deleteBtn = li.querySelector(".delete-button");
+    deleteBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
         allToDos = allToDos.filter(t => t.id !== todo.id);
         saveTodos();
         updateToDoList();
-    };
+    });
 
     return li;
 }
@@ -163,9 +191,11 @@ function createToDoItem(todo) {
 function updateTaskCount() {
     if (!taskCountEl) return;
     const active = getActiveTaskCount();
+    const total = allToDos.length;
+    
     taskCountEl.textContent = isPro
-        ? `${active} tasks remaining`
-        : `${active} of ${FREE_TASK_LIMIT} remaining`;
+        ? `${active} tasks remaining · ${total} total`
+        : `${active} of ${FREE_TASK_LIMIT} tasks remaining`;
 }
 
 function escapeHTML(text) {
@@ -232,14 +262,16 @@ function attachEventListeners() {
     });
 }
 
-// ================= POLL FIREBASE TO SHOW PRO BADGE (optional) =================
+// ================= POLL FIREBASE TO SHOW PRO BADGE =================
 async function pollProStatus() {
     const user = auth.currentUser;
     if (!user) return;
+    
     const snap = await getDoc(doc(db, "users", user.uid));
     if (snap.exists() && snap.data().pro === true && !isPro) {
         isPro = true;
         updateUIForTier();
+        updateToDoList();
         successModal.classList.add("active");
     }
 }

@@ -1,4 +1,4 @@
-/* ===== MODERN MINIMALIST STYLES - FREEMIUM MODEL ===== */
+/* ===== MODERN MINIMALIST STYLES - KWIKTASK FREEMIUM ===== */
 * {
     margin: 0;
     padding: 0;
@@ -18,8 +18,6 @@ body {
     margin: 0 auto;
     padding: 40px 24px;
 }
-
-
 
 /* ===== HEADER ===== */
 .header {
@@ -185,6 +183,10 @@ h1 {
     justify-content: center;
 }
 
+#add-button i {
+    font-size: 18px;
+}
+
 #add-button:hover {
     background: #333;
     transform: scale(0.98);
@@ -246,6 +248,7 @@ h1 {
     background: #fcfcfc;
 }
 
+/* Custom checkbox */
 .todo .custom-checkbox {
     display: flex;
     align-items: center;
@@ -264,32 +267,34 @@ h1 {
     fill: transparent;
 }
 
-input[type="checkbox"] {
+.todo input[type="checkbox"] {
     display: none;
 }
 
-input[type="checkbox"]:checked ~ .custom-checkbox {
+.todo input[type="checkbox"]:checked ~ .custom-checkbox {
     background: black;
     border-color: black;
 }
 
-input[type="checkbox"]:checked ~ .custom-checkbox svg {
+.todo input[type="checkbox"]:checked ~ .custom-checkbox svg {
     fill: white;
 }
 
-.todo-text {
+/* Todo text */
+.todo .todo-text {
     flex: 1;
     font-size: 16px;
     font-weight: 500;
     color: #1a1a1a;
 }
 
-input[type="checkbox"]:checked ~ .todo-text {
+.todo input[type="checkbox"]:checked ~ .todo-text {
     text-decoration: line-through;
     color: #aaa;
 }
 
-.delete-button {
+/* ===== FIXED DELETE BUTTON STYLES ===== */
+.todo .delete-button {
     background: none;
     border: none;
     padding: 8px;
@@ -299,20 +304,44 @@ input[type="checkbox"]:checked ~ .todo-text {
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-left: auto;
 }
 
-.delete-button:hover {
+.todo .delete-button:hover {
     opacity: 1;
 }
 
-.delete-button svg {
+.todo .delete-button svg {
     width: 18px;
     height: 18px;
     fill: #666;
+    transition: fill 0.2s;
 }
 
-.delete-button:hover svg {
+.todo .delete-button:hover svg {
     fill: #ff4444;
+}
+
+/* If using Font Awesome icons instead of SVG */
+.todo .delete-button i {
+    font-size: 18px;
+    color: #666;
+    transition: color 0.2s;
+}
+
+.todo .delete-button:hover i {
+    color: #ff4444;
+}
+
+/* Empty state */
+.todo-list .empty-state {
+    color: #999;
+    padding: 32px;
+    text-align: center;
+    width: 100%;
+    background: #fafafa;
+    border-radius: 16px;
+    border: 1px dashed #ddd;
 }
 
 /* ===== UPGRADE PROMPT ===== */
