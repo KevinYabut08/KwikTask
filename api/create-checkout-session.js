@@ -21,7 +21,7 @@ export default async function handler(req, res) {
         },
       ],
       success_url: "https://kwik-task.vercel.app/success",
-      cancel_url: "https://kwik-task.vercel.app/cancel",
+      cancel_url: "https://kwik-task.vercel.app/index.html",
       metadata: { firebaseUID: uid },
     });
 
