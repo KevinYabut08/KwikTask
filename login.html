@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - KwikTask</title>
+    <script type="module" src="login.js"></script>
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+    <div id="authContainer">
+    <input type="email" id="emailInput" placeholder="email">
+    <input type="password" id="passwordInput" placeholder="password">
+    <button id="loginBtn">login</button>
+    <button id="signupBtn">sign up</button>
+    </div>
+
+    <div id="appContainer" style="display:none;">
+    <button id="logoutBtn">logout</button>
+
+    <form id="todo-form">
+        <input id="todo-input" placeholder="write a task..." />
+        <button type="submit">add</button>
+    </form>
+
+    <p id="taskCount"></p>
+    <p id="upgradePrompt" style="display:none;">Upgrade to Pro for unlimited tasks 🚀</p>
+
+    <ul id="todo-list"></ul>
+    </div>
+</body>
+</html>
