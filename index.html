@@ -75,6 +75,11 @@
                 <span>calendar</span>
                 <span class="pro-tag" id="calendarProTag">pro</span>
             </button>
+            <button class="nav-item" data-view="files">
+                <i class="fas fa-folder"></i>
+                <span>files</span>
+                <span class="pro-tag" id="filesProTag">pro</span>
+            </button>
             <button class="nav-item" data-view="settings">
                 <i class="fas fa-sliders-h"></i>
                 <span>settings</span>
@@ -266,7 +271,7 @@
                 </div>
             </div>
 
-            <!-- ===== CALENDAR VIEW (pro only) ===== -->
+            <!-- ===== INTERACTIVE CALENDAR VIEW (pro only) ===== -->
             <div id="calendar-view" style="display: none;">
                 <div class="hero">
                     <h1>calendar</h1>
@@ -285,25 +290,82 @@
 
                 <!-- Calendar content for pro users -->
                 <div class="calendar-content" id="calendarContent" style="display: none;">
+                    <!-- Mini Calendar Navigation -->
                     <div class="calendar-header">
-                        <h2 id="currentMonth">January 2026</h2>
+                        <div class="calendar-title">
+                            <h2 id="currentMonth">January 2026</h2>
+                            <span class="calendar-stats" id="calendarStats">0 tasks · 0 completed</span>
+                        </div>
                         <div class="calendar-nav">
-                            <button class="calendar-nav-btn" id="todayBtn">today</button>
-                            <button class="calendar-nav-btn" id="prevMonthBtn">
-                                <i class="fas fa-chevron-left"></i>
+                            <button class="calendar-nav-btn" id="todayBtn">
+                                <i class="fas fa-dot-circle"></i> today
                             </button>
-                            <button class="calendar-nav-btn" id="nextMonthBtn">
-                                <i class="fas fa-chevron-right"></i>
+                            <div class="nav-group">
+                                <button class="calendar-nav-btn" id="prevMonthBtn">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <button class="calendar-nav-btn" id="nextMonthBtn">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- View Toggle -->
+                    <div class="calendar-view-toggle">
+                        <button class="view-toggle-btn active" data-view="month">
+                            <i class="fas fa-calendar-alt"></i> month
+                        </button>
+                        <button class="view-toggle-btn" data-view="week">
+                            <i class="fas fa-calendar-week"></i> week
+                        </button>
+                        <button class="view-toggle-btn" data-view="day">
+                            <i class="fas fa-calendar-day"></i> day
+                        </button>
+                    </div>
+
+                    <!-- Calendar Grid Container -->
+                    <div class="calendar-grid-container">
+                        <!-- Weekday headers will be injected via JS -->
+                        <div class="calendar-weekdays" id="calendarWeekdays"></div>
+                        <!-- Calendar days grid -->
+                        <div class="calendar-grid" id="calendarGrid"></div>
+                    </div>
+
+                    <!-- Quick Add Task -->
+                    <div class="quick-add-task">
+                        <div class="quick-add-header">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>quick add task</span>
+                        </div>
+                        <div class="quick-add-form">
+                            <input type="text" id="quickTaskInput" placeholder="write a task..." autocomplete="off">
+                            <input type="date" id="quickTaskDate" class="quick-task-date">
+                            <select id="quickTaskPriority" class="quick-task-priority">
+                                <option value="low">low priority</option>
+                                <option value="medium" selected>medium priority</option>
+                                <option value="high">high priority</option>
+                            </select>
+                            <button class="quick-add-btn" id="quickAddTaskBtn">
+                                <i class="fas fa-plus"></i> add
                             </button>
                         </div>
                     </div>
 
-                    <!-- Calendar Grid -->
-                    <div class="calendar-grid" id="calendarGrid">
-                        <!-- Calendar days will be dynamically generated here -->
+                    <!-- Selected Day Tasks -->
+                    <div class="selected-day-tasks" id="selectedDayTasks" style="display: none;">
+                        <div class="selected-day-header">
+                            <h3 id="selectedDayTitle">January 15, 2026</h3>
+                            <button class="close-btn" id="closeSelectedDay">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="selected-day-list" id="selectedDayList">
+                            <!-- Tasks will be injected here -->
+                        </div>
                     </div>
 
-                    <!-- Legend -->
+                    <!-- Calendar Legend -->
                     <div class="calendar-legend">
                         <div class="legend-item">
                             <span class="legend-dot today"></span>
@@ -315,7 +377,120 @@
                         </div>
                         <div class="legend-item">
                             <span class="legend-dot completed"></span>
-                            <span>completed tasks</span>
+                            <span>completed</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot high-priority"></span>
+                            <span>high priority</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot medium-priority"></span>
+                            <span>medium priority</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot low-priority"></span>
+                            <span>low priority</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== FILES VIEW (pro only) ===== -->
+            <div id="files-view" style="display: none;">
+                <div class="hero">
+                    <h1>files</h1>
+                    <p class="subtitle">organize your documents and notes</p>
+                </div>
+                
+                <!-- Locked state for free users -->
+                <div class="pro-locked-feature" id="filesLocked">
+                    <div class="locked-content">
+                        <i class="fas fa-lock"></i>
+                        <h3>files are a pro feature</h3>
+                        <p>upgrade to store, organize, and manage your documents</p>
+                        <button class="upgrade-prompt-btn" id="filesUpgradeBtn">upgrade to pro →</button>
+                    </div>
+                </div>
+
+                <!-- Files content for pro users -->
+                <div class="files-content" id="filesContent" style="display: none;">
+                    <!-- Files Header with Actions -->
+                    <div class="files-header">
+                        <div class="files-header-left">
+                            <button class="files-action-btn primary" id="newFolderBtn">
+                                <i class="fas fa-folder-plus"></i> new folder
+                            </button>
+                            <button class="files-action-btn" id="uploadFileBtn">
+                                <i class="fas fa-cloud-upload-alt"></i> upload
+                            </button>
+                        </div>
+                        <div class="files-header-right">
+                            <div class="files-search">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="fileSearchInput" placeholder="search files...">
+                            </div>
+                            <div class="files-view-toggle">
+                                <button class="view-toggle-btn active" data-view="grid">
+                                    <i class="fas fa-th-large"></i>
+                                </button>
+                                <button class="view-toggle-btn" data-view="list">
+                                    <i class="fas fa-list"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Breadcrumb Navigation -->
+                    <div class="files-breadcrumb" id="filesBreadcrumb">
+                        <span class="breadcrumb-item" data-folder="root">my files</span>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="files-stats">
+                        <div class="stat-chip">
+                            <i class="fas fa-folder"></i>
+                            <span id="folderCount">0 folders</span>
+                        </div>
+                        <div class="stat-chip">
+                            <i class="fas fa-file"></i>
+                            <span id="fileCount">0 files</span>
+                        </div>
+                        <div class="stat-chip">
+                            <i class="fas fa-database"></i>
+                            <span id="storageUsed">0 MB used</span>
+                        </div>
+                    </div>
+
+                    <!-- Files Grid/List View - EMPTY - JS will populate this -->
+                    <div class="files-container" id="filesContainer">
+                        <div class="files-grid" id="filesGrid"></div>
+                    </div>
+
+                    <!-- Empty State (hidden by default) -->
+                    <div class="files-empty-state" id="filesEmptyState" style="display: none;">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-folder-open"></i>
+                        </div>
+                        <h3>this folder is empty</h3>
+                        <p>upload files or create a new folder to get started</p>
+                        <div class="empty-state-actions">
+                            <button class="empty-state-btn" id="emptyNewFolderBtn">
+                                <i class="fas fa-folder-plus"></i> new folder
+                            </button>
+                            <button class="empty-state-btn primary" id="emptyUploadBtn">
+                                <i class="fas fa-cloud-upload-alt"></i> upload files
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Recent Files Section -->
+                    <div class="recent-files-section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-clock"></i> recent files</h3>
+                            <button class="view-all-btn" id="viewAllRecent">view all</button>
+                        </div>
+                        <div class="recent-files-list" id="recentFilesList">
+                            <!-- Recent files will be injected via JS -->
                         </div>
                     </div>
                 </div>
@@ -503,7 +678,7 @@
                     </div>
                     <div class="card-content">
                         <h3>kwiktask pro</h3>
-                        <p>unlimited tasks · analytics · no ads</p>
+                        <p>unlimited tasks · analytics · calendar · files · no ads</p>
                         <div class="feature-comparison">
                             <div class="feature free">
                                 <span>free</span>
@@ -518,10 +693,10 @@
                                 <ul>
                                     <li><i class="fas fa-check"></i> unlimited tasks</li>
                                     <li><i class="fas fa-check"></i> advanced analytics</li>
-                                    <li><i class="fas fa-check"></i> calendar view</li>
+                                    <li><i class="fas fa-check"></i> interactive calendar</li>
+                                    <li><i class="fas fa-check"></i> file storage & organization</li>
                                     <li><i class="fas fa-check"></i> no ads</li>
                                     <li><i class="fas fa-check"></i> export data</li>
-                                    <li><i class="fas fa-check"></i> priority support</li>
                                 </ul>
                             </div>
                         </div>
@@ -557,10 +732,10 @@
                     <ul class="plan-features">
                         <li><i class="fas fa-check"></i> unlimited tasks (free: 5 max)</li>
                         <li><i class="fas fa-check"></i> advanced analytics & insights</li>
-                        <li><i class="fas fa-check"></i> calendar view</li>
+                        <li><i class="fas fa-check"></i> interactive calendar view</li>
+                        <li><i class="fas fa-check"></i> file storage & organization</li>
                         <li><i class="fas fa-check"></i> export to CSV/PDF</li>
                         <li><i class="fas fa-check"></i> no advertisements</li>
-                        <li><i class="fas fa-check"></i> priority email support</li>
                     </ul>
                 </div>
                 <button class="stripe-button" id="stripeCheckoutBtn">
@@ -587,7 +762,7 @@
                 <div class="success-icon">
                     <i class="fas fa-crown"></i>
                 </div>
-                <p class="success-message">you now have unlimited tasks, analytics, calendar, and zero ads.</p>
+                <p class="success-message">you now have unlimited tasks, analytics, calendar, files, and zero ads.</p>
                 <button class="success-btn" id="continueBtn">continue to tasks</button>
             </div>
         </div>
@@ -604,6 +779,83 @@
                 <ul class="day-tasks-list" id="dayTasksList">
                     <!-- Tasks for selected day will appear here -->
                 </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Folder Modal -->
+    <div class="modal" id="newFolderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>create new folder</h2>
+                <button class="modal-close" id="closeNewFolderModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="folderName">folder name</label>
+                    <input type="text" id="folderName" class="profile-input" placeholder="e.g., Projects, Documents" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="folderColor">folder color</label>
+                    <div class="color-picker" id="folderColorPicker">
+                        <div class="color-option selected" data-color="#000" style="background: #000;"></div>
+                        <div class="color-option" data-color="#f59e0b" style="background: #f59e0b;"></div>
+                        <div class="color-option" data-color="#00b894" style="background: #00b894;"></div>
+                        <div class="color-option" data-color="#0984e3" style="background: #0984e3;"></div>
+                        <div class="color-option" data-color="#e84342" style="background: #e84342;"></div>
+                        <div class="color-option" data-color="#6c5ce7" style="background: #6c5ce7;"></div>
+                    </div>
+                </div>
+                <button class="create-folder-btn" id="createFolderBtn">
+                    <i class="fas fa-folder-plus"></i> create folder
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Preview Modal -->
+    <div class="modal" id="filePreviewModal">
+        <div class="modal-content file-preview-content">
+            <div class="modal-header">
+                <div class="file-preview-title">
+                    <i class="fas fa-file-alt" id="previewFileIcon"></i>
+                    <h2 id="previewFileName">document.pdf</h2>
+                </div>
+                <button class="modal-close" id="closeFilePreview">&times;</button>
+            </div>
+            <div class="modal-body file-preview-body">
+                <div class="file-info-grid">
+                    <div class="file-info-item">
+                        <span class="info-label">type</span>
+                        <span class="info-value" id="previewFileType">PDF Document</span>
+                    </div>
+                    <div class="file-info-item">
+                        <span class="info-label">size</span>
+                        <span class="info-value" id="previewFileSize">2.4 MB</span>
+                    </div>
+                    <div class="file-info-item">
+                        <span class="info-label">modified</span>
+                        <span class="info-value" id="previewFileModified">Jan 15, 2026</span>
+                    </div>
+                    <div class="file-info-item">
+                        <span class="info-label">location</span>
+                        <span class="info-value" id="previewFileLocation">/documents</span>
+                    </div>
+                </div>
+                <div class="file-preview-actions">
+                    <button class="file-action-btn" id="downloadFileBtn">
+                        <i class="fas fa-download"></i> download
+                    </button>
+                    <button class="file-action-btn" id="renameFileBtn">
+                        <i class="fas fa-pencil-alt"></i> rename
+                    </button>
+                    <button class="file-action-btn" id="moveFileBtn">
+                        <i class="fas fa-folder"></i> move
+                    </button>
+                    <button class="file-action-btn danger" id="deleteFileBtn">
+                        <i class="fas fa-trash-alt"></i> delete
+                    </button>
+                </div>
             </div>
         </div>
     </div>
