@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar</title>
+</head>
+<body>
+    <!-- ===== CALENDAR VIEW (pro only) ===== -->
+<div id="calendar-view" style="display: none;">
+    <div class="hero">
+        <h1>calendar</h1>
+        <p class="subtitle">plan and visualize your tasks</p>
+    </div>
+    
+    <!-- Locked state for free users -->
+    <div class="pro-locked-feature" id="calendarLocked">
+        <div class="locked-content">
+            <i class="fas fa-lock"></i>
+            <h3>calendar is a pro feature</h3>
+            <p>upgrade to schedule tasks and see your monthly overview</p>
+            <button class="upgrade-prompt-btn" id="calendarUpgradeBtn">upgrade to pro →</button>
+        </div>
+    </div>
+
+    <!-- Calendar content for pro users -->
+    <div class="calendar-content" id="calendarContent" style="display: none;">
+        <div class="calendar-header">
+            <h2 id="currentMonth">January 2026</h2>
+            <div class="calendar-nav">
+                <button class="calendar-nav-btn" id="todayBtn">today</button>
+                <button class="calendar-nav-btn" id="prevMonthBtn">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="calendar-nav-btn" id="nextMonthBtn">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Calendar Grid -->
+        <div class="calendar-grid" id="calendarGrid">
+            <!-- Calendar days will be dynamically generated here -->
+        </div>
+
+        <!-- Legend -->
+        <div class="calendar-legend">
+            <div class="legend-item">
+                <span class="legend-dot today"></span>
+                <span>today</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot has-tasks"></span>
+                <span>has tasks</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot completed"></span>
+                <span>completed tasks</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Day Tasks Modal -->
+<div class="modal" id="dayTasksModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="selectedDate">January 1, 2026</h2>
+            <button class="modal-close" id="closeDayTasksModal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <ul class="day-tasks-list" id="dayTasksList">
+                <!-- Tasks for selected day will appear here -->
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="/scripts/calendar.js"></script>
+</body>
+</html>
