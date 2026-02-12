@@ -53,8 +53,6 @@ onAuthStateChanged(auth, async (user) => {
 async function handleLogout() {
     try {
         await signOut(auth);
-        // Clear local storage
-        localStorage.removeItem(TODO_STORAGE_KEY);
         // Redirect to login page
         window.location.href = "/login.html";
     } catch (error) {
