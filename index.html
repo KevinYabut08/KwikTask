@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>KwikTask</title>
+    <title>KwikTask · notes, tasks, pro</title>
     
     <!-- Google AdSense - your existing client ID -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9621027812053080" crossorigin="anonymous"></script>
@@ -18,10 +18,10 @@
     <!-- Chart.js for analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     
-    <!-- CSS -->
+    <!-- CSS (linked externally - you have styles.css) -->
     <link rel="stylesheet" href="styles.css">
 
-    <!-- AUTH -->
+    <!-- AUTH (Firebase) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -46,7 +46,7 @@
     <div class="app-container">
         <!-- Header with pro status -->
         <div class="header">
-            <span class="logo-text">kwiktask</span>
+            <span class="logo-text">KwikTask</span>
             <div class="header-right">
                 <div class="pro-badge" id="proBadge" style="display: none;">
                     <i class="fas fa-crown"></i>
@@ -64,6 +64,11 @@
             <button class="nav-item active" data-view="tasks">
                 <i class="fas fa-check-circle"></i>
                 <span>tasks</span>
+            </button>
+            <button class="nav-item" data-view="notes">
+                <i class="fas fa-pen"></i>
+                <span>notes</span>
+                <span class="pro-tag" id="notesProTag">pro</span>
             </button>
             <button class="nav-item" data-view="analytics">
                 <i class="fas fa-chart-line"></i>
@@ -88,9 +93,8 @@
 
         <!-- Main content -->
         <div class="main-content">
-            <!-- ===== TASKS VIEW (default) ===== -->
+            <!-- ===== TASKS VIEW ===== -->
             <div id="tasks-view">
-                <!-- Hero section with pro CTA for free users -->
                 <div class="hero">
                     <h1>clear your mind,<br>one task at a time</h1>
                     <p class="subtitle">the minimalist task manager for focused people</p>
@@ -100,7 +104,6 @@
                     </div>
                 </div>
 
-                <!-- Task input - clean and focused -->
                 <div class="task-input-container">
                     <form id="todo-form">
                         <input id="todo-input" type="text" placeholder="write a task..." autocomplete="off">
@@ -110,17 +113,13 @@
                     </form>
                 </div>
 
-                <!-- Task list -->
                 <div class="task-section">
                     <div class="section-label">
                         <span>today's tasks</span>
                         <span class="task-count" id="taskCount">0 tasks</span>
                     </div>
-                    <ul id="todo-list" class="todo-list">
-                        <!-- tasks injected via JS -->
-                    </ul>
+                    <ul id="todo-list" class="todo-list"></ul>
                     
-                    <!-- Upgrade prompt for free users when approaching limit -->
                     <div class="upgrade-prompt" id="upgradePrompt" style="display: none;">
                         <div class="upgrade-content">
                             <i class="fas fa-lock"></i>
@@ -130,7 +129,6 @@
                     </div>
                 </div>
 
-                <!-- AdSense native ad unit - only for free users -->
                 <div class="ad-unit" id="adUnit">
                     <ins class="adsbygoogle"
                          style="display:block"
@@ -141,6 +139,80 @@
                 </div>
             </div>
 
+            <!-- ===== NOTES VIEW (PRO) ===== -->
+            <div id="notes-view" style="display: none;">
+                <div class="hero">
+                    <h1>notes</h1>
+                    <p class="subtitle">capture ideas, meeting notes, or journal entries</p>
+                </div>
+
+                <!-- Locked state for free users -->
+                <div class="pro-locked-feature" id="notesLocked">
+                    <div class="locked-content">
+                        <i class="fas fa-lock"></i>
+                        <h3>notes are a pro feature</h3>
+                        <p>upgrade to create rich text notes, organize thoughts, and never lose an idea.</p>
+                        <button class="upgrade-prompt-btn" id="notesUpgradeBtn">upgrade to pro →</button>
+                    </div>
+                </div>
+
+                <!-- Notes content for pro users -->
+                <div class="notes-content" id="notesContent" style="display: none;">
+                    <div class="notes-header">
+                        <div class="notes-header-left">
+                            <button class="notes-action-btn primary" id="newNoteBtn">
+                                <i class="fas fa-pen-to-square"></i> new note
+                            </button>
+                        </div>
+                        <div class="notes-header-right">
+                            <div class="notes-search">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="noteSearchInput" placeholder="search notes..." autocomplete="off">
+                            </div>
+                            <div class="notes-view-toggle">
+                                <button class="view-toggle-btn active" data-view="grid">
+                                    <i class="fas fa-grid-2"></i>
+                                </button>
+                                <button class="view-toggle-btn" data-view="list">
+                                    <i class="fas fa-list"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="notes-folders">
+                        <button class="folder-chip active" data-folder="all">📓 all notes</button>
+                        <button class="folder-chip" data-folder="personal">🧑 personal</button>
+                        <button class="folder-chip" data-folder="work">💼 work</button>
+                        <button class="folder-chip" data-folder="ideas">💡 ideas</button>
+                        <button class="folder-chip" data-folder="other">🗂️ other</button>
+                    </div>
+
+                    <div class="notes-container" id="notesContainer">
+                        <div class="notes-grid" id="notesGrid"></div>
+                    </div>
+
+                    <div class="notes-empty-state" id="notesEmptyState" style="display: none;">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-pen"></i>
+                        </div>
+                        <h3>no notes yet</h3>
+                        <p>create your first note – ideas, lists, or quick thoughts</p>
+                        <button class="empty-state-btn primary" id="emptyStateNewNoteBtn">
+                            <i class="fas fa-plus"></i> create note
+                        </button>
+                    </div>
+
+                    <div class="recent-notes-section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-clock"></i> recently updated</h3>
+                            <button class="view-all-btn" id="viewAllNotesBtn">view all</button>
+                        </div>
+                        <div class="recent-notes-list" id="recentNotesList"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- ===== ANALYTICS VIEW (pro only) ===== -->
             <div id="analytics-view" style="display: none;">
                 <div class="hero">
@@ -148,7 +220,6 @@
                     <p class="subtitle">track your productivity over time</p>
                 </div>
                 
-                <!-- Locked state for free users -->
                 <div class="pro-locked-feature" id="analyticsLocked">
                     <div class="locked-content">
                         <i class="fas fa-lock"></i>
@@ -158,50 +229,38 @@
                     </div>
                 </div>
 
-                <!-- Analytics content for pro users -->
                 <div class="analytics-content" id="analyticsContent" style="display: none;">
-                    <!-- Stats Grid -->
                     <div class="stats-grid">
                         <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-tasks"></i>
-                            </div>
+                            <div class="stat-icon"><i class="fas fa-tasks"></i></div>
                             <div class="stat-details">
                                 <span class="stat-label">total tasks</span>
                                 <span class="stat-value" id="totalTasksStat">0</span>
                             </div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
+                            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
                             <div class="stat-details">
                                 <span class="stat-label">completed</span>
                                 <span class="stat-value" id="completedTasksStat">0</span>
                             </div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-chart-pie"></i>
-                            </div>
+                            <div class="stat-icon"><i class="fas fa-chart-pie"></i></div>
                             <div class="stat-details">
                                 <span class="stat-label">completion rate</span>
                                 <span class="stat-value" id="completionRateStat">0%</span>
                             </div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-calendar-week"></i>
-                            </div>
+                            <div class="stat-icon"><i class="fas fa-calendar-week"></i></div>
                             <div class="stat-details">
                                 <span class="stat-label">avg per day</span>
                                 <span class="stat-value" id="avgTasksStat">0</span>
                             </div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-fire"></i>
-                            </div>
+                            <div class="stat-icon"><i class="fas fa-fire"></i></div>
                             <div class="stat-details">
                                 <span class="stat-label">current streak</span>
                                 <span class="stat-value" id="currentStreakStat">0</span>
@@ -209,9 +268,7 @@
                             </div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-trophy"></i>
-                            </div>
+                            <div class="stat-icon"><i class="fas fa-trophy"></i></div>
                             <div class="stat-details">
                                 <span class="stat-label">longest streak</span>
                                 <span class="stat-value" id="longestStreakStat">0</span>
@@ -220,7 +277,6 @@
                         </div>
                     </div>
 
-                    <!-- Charts Section -->
                     <div class="charts-section">
                         <div class="chart-card">
                             <div class="chart-header">
@@ -231,7 +287,6 @@
                                 <canvas id="weeklyChart"></canvas>
                             </div>
                         </div>
-                        
                         <div class="chart-card">
                             <div class="chart-header">
                                 <h3>productivity by time</h3>
@@ -243,42 +298,33 @@
                         </div>
                     </div>
 
-                    <!-- Insights Section -->
                     <div class="insights-section">
                         <div class="insights-header">
                             <h3><i class="fas fa-lightbulb"></i> insights & recommendations</h3>
                         </div>
-                        <ul class="insights-list" id="productivityInsights">
-                            <!-- Insights will be dynamically added here -->
-                        </ul>
+                        <ul class="insights-list" id="productivityInsights"></ul>
                     </div>
 
-                    <!-- Export Section -->
                     <div class="export-section">
                         <div class="export-card">
-                            <div class="export-icon">
-                                <i class="fas fa-file-export"></i>
-                            </div>
+                            <div class="export-icon"><i class="fas fa-file-export"></i></div>
                             <div class="export-content">
                                 <h4>export your data</h4>
                                 <p>download your task history as a CSV file</p>
                             </div>
-                            <button class="export-btn" id="exportDataBtn">
-                                <i class="fas fa-download"></i> export
-                            </button>
+                            <button class="export-btn" id="exportDataBtn"><i class="fas fa-download"></i> export</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ===== INTERACTIVE CALENDAR VIEW (pro only) ===== -->
+            <!-- ===== CALENDAR VIEW (pro only) - UPDATED WITH TIME SLOTS & CLICKABLE WEEK/DAY ===== -->
             <div id="calendar-view" style="display: none;">
                 <div class="hero">
                     <h1>calendar</h1>
                     <p class="subtitle">plan and visualize your tasks</p>
                 </div>
                 
-                <!-- Locked state for free users -->
                 <div class="pro-locked-feature" id="calendarLocked">
                     <div class="locked-content">
                         <i class="fas fa-lock"></i>
@@ -288,51 +334,34 @@
                     </div>
                 </div>
 
-                <!-- Calendar content for pro users -->
                 <div class="calendar-content" id="calendarContent" style="display: none;">
-                    <!-- Mini Calendar Navigation -->
                     <div class="calendar-header">
                         <div class="calendar-title">
                             <h2 id="currentMonth">January 2026</h2>
                             <span class="calendar-stats" id="calendarStats">0 tasks · 0 completed</span>
                         </div>
                         <div class="calendar-nav">
-                            <button class="calendar-nav-btn" id="todayBtn">
-                                <i class="fas fa-dot-circle"></i> today
-                            </button>
+                            <button class="calendar-nav-btn" id="todayBtn"><i class="fas fa-dot-circle"></i> today</button>
                             <div class="nav-group">
-                                <button class="calendar-nav-btn" id="prevMonthBtn">
-                                    <i class="fas fa-chevron-left"></i>
-                                </button>
-                                <button class="calendar-nav-btn" id="nextMonthBtn">
-                                    <i class="fas fa-chevron-right"></i>
-                                </button>
+                                <button class="calendar-nav-btn" id="prevMonthBtn"><i class="fas fa-chevron-left"></i></button>
+                                <button class="calendar-nav-btn" id="nextMonthBtn"><i class="fas fa-chevron-right"></i></button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- View Toggle -->
                     <div class="calendar-view-toggle">
-                        <button class="view-toggle-btn active" data-view="month">
-                            <i class="fas fa-calendar-alt"></i> month
-                        </button>
-                        <button class="view-toggle-btn" data-view="week">
-                            <i class="fas fa-calendar-week"></i> week
-                        </button>
-                        <button class="view-toggle-btn" data-view="day">
-                            <i class="fas fa-calendar-day"></i> day
-                        </button>
+                        <button class="view-toggle-btn active" data-view="month"><i class="fas fa-calendar-alt"></i> month</button>
+                        <button class="view-toggle-btn" data-view="week"><i class="fas fa-calendar-week"></i> week</button>
+                        <button class="view-toggle-btn" data-view="day"><i class="fas fa-calendar-day"></i> day</button>
                     </div>
 
-                    <!-- Calendar Grid Container -->
-                    <div class="calendar-grid-container">
-                        <!-- Weekday headers will be injected via JS -->
+                    <!-- Clickable calendar grid container - dynamically populated by JS -->
+                    <div class="calendar-grid-container" id="calendarGridContainer">
                         <div class="calendar-weekdays" id="calendarWeekdays"></div>
-                        <!-- Calendar days grid -->
                         <div class="calendar-grid" id="calendarGrid"></div>
                     </div>
 
-                    <!-- Quick Add Task -->
+                    <!-- Quick add task with TIME SLOT dropdown (NEW) -->
                     <div class="quick-add-task">
                         <div class="quick-add-header">
                             <i class="fas fa-plus-circle"></i>
@@ -341,56 +370,64 @@
                         <div class="quick-add-form">
                             <input type="text" id="quickTaskInput" placeholder="write a task..." autocomplete="off">
                             <input type="date" id="quickTaskDate" class="quick-task-date">
+                            
+                            <!-- ✦ NEW: Time slot dropdown with 30-minute increments ✦ -->
+                            <select id="quickTaskTimeSlot" class="quick-task-timeslot">
+                                <option value="">no time</option>
+                                <option value="08:00">8:00 AM</option>
+                                <option value="08:30">8:30 AM</option>
+                                <option value="09:00" selected>9:00 AM</option>
+                                <option value="09:30">9:30 AM</option>
+                                <option value="10:00">10:00 AM</option>
+                                <option value="10:30">10:30 AM</option>
+                                <option value="11:00">11:00 AM</option>
+                                <option value="11:30">11:30 AM</option>
+                                <option value="12:00">12:00 PM</option>
+                                <option value="12:30">12:30 PM</option>
+                                <option value="13:00">1:00 PM</option>
+                                <option value="13:30">1:30 PM</option>
+                                <option value="14:00">2:00 PM</option>
+                                <option value="14:30">2:30 PM</option>
+                                <option value="15:00">3:00 PM</option>
+                                <option value="15:30">3:30 PM</option>
+                                <option value="16:00">4:00 PM</option>
+                                <option value="16:30">4:30 PM</option>
+                                <option value="17:00">5:00 PM</option>
+                                <option value="17:30">5:30 PM</option>
+                                <option value="18:00">6:00 PM</option>
+                                <option value="18:30">6:30 PM</option>
+                                <option value="19:00">7:00 PM</option>
+                                <option value="19:30">7:30 PM</option>
+                                <option value="20:00">8:00 PM</option>
+                            </select>
+                            
                             <select id="quickTaskPriority" class="quick-task-priority">
                                 <option value="low">low priority</option>
                                 <option value="medium" selected>medium priority</option>
                                 <option value="high">high priority</option>
                             </select>
-                            <button class="quick-add-btn" id="quickAddTaskBtn">
-                                <i class="fas fa-plus"></i> add
-                            </button>
+                            <button class="quick-add-btn" id="quickAddTaskBtn"><i class="fas fa-plus"></i> add</button>
                         </div>
                     </div>
 
-                    <!-- Selected Day Tasks -->
+                    <!-- Selected day tasks panel -->
                     <div class="selected-day-tasks" id="selectedDayTasks" style="display: none;">
                         <div class="selected-day-header">
                             <h3 id="selectedDayTitle">January 15, 2026</h3>
-                            <button class="close-btn" id="closeSelectedDay">
-                                <i class="fas fa-times"></i>
-                            </button>
+                            <button class="close-btn" id="closeSelectedDay"><i class="fas fa-times"></i></button>
                         </div>
-                        <div class="selected-day-list" id="selectedDayList">
-                            <!-- Tasks will be injected here -->
-                        </div>
+                        <div class="selected-day-list" id="selectedDayList"></div>
                     </div>
 
-                    <!-- Calendar Legend -->
+                    <!-- Calendar legend with scheduled tasks indicator -->
                     <div class="calendar-legend">
-                        <div class="legend-item">
-                            <span class="legend-dot today"></span>
-                            <span>today</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-dot has-tasks"></span>
-                            <span>has tasks</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-dot completed"></span>
-                            <span>completed</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-dot high-priority"></span>
-                            <span>high priority</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-dot medium-priority"></span>
-                            <span>medium priority</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-dot low-priority"></span>
-                            <span>low priority</span>
-                        </div>
+                        <div class="legend-item"><span class="legend-dot today"></span><span>today</span></div>
+                        <div class="legend-item"><span class="legend-dot has-tasks"></span><span>has tasks</span></div>
+                        <div class="legend-item"><span class="legend-dot scheduled"></span><span>scheduled</span></div>
+                        <div class="legend-item"><span class="legend-dot completed"></span><span>completed</span></div>
+                        <div class="legend-item"><span class="legend-dot high-priority"></span><span>high priority</span></div>
+                        <div class="legend-item"><span class="legend-dot medium-priority"></span><span>medium priority</span></div>
+                        <div class="legend-item"><span class="legend-dot low-priority"></span><span>low priority</span></div>
                     </div>
                 </div>
             </div>
@@ -402,7 +439,6 @@
                     <p class="subtitle">organize your documents and notes</p>
                 </div>
                 
-                <!-- Locked state for free users -->
                 <div class="pro-locked-feature" id="filesLocked">
                     <div class="locked-content">
                         <i class="fas fa-lock"></i>
@@ -412,17 +448,11 @@
                     </div>
                 </div>
 
-                <!-- Files content for pro users -->
                 <div class="files-content" id="filesContent" style="display: none;">
-                    <!-- Files Header with Actions -->
                     <div class="files-header">
                         <div class="files-header-left">
-                            <button class="files-action-btn primary" id="newFolderBtn">
-                                <i class="fas fa-folder-plus"></i> new folder
-                            </button>
-                            <button class="files-action-btn" id="uploadFileBtn">
-                                <i class="fas fa-cloud-upload-alt"></i> upload
-                            </button>
+                            <button class="files-action-btn primary" id="newFolderBtn"><i class="fas fa-folder-plus"></i> new folder</button>
+                            <button class="files-action-btn" id="uploadFileBtn"><i class="fas fa-cloud-upload-alt"></i> upload</button>
                         </div>
                         <div class="files-header-right">
                             <div class="files-search">
@@ -430,68 +460,42 @@
                                 <input type="text" id="fileSearchInput" placeholder="search files...">
                             </div>
                             <div class="files-view-toggle">
-                                <button class="view-toggle-btn active" data-view="grid">
-                                    <i class="fas fa-th-large"></i>
-                                </button>
-                                <button class="view-toggle-btn" data-view="list">
-                                    <i class="fas fa-list"></i>
-                                </button>
+                                <button class="view-toggle-btn active" data-view="grid"><i class="fas fa-th-large"></i></button>
+                                <button class="view-toggle-btn" data-view="list"><i class="fas fa-list"></i></button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Breadcrumb Navigation -->
                     <div class="files-breadcrumb" id="filesBreadcrumb">
                         <span class="breadcrumb-item" data-folder="root">my files</span>
                     </div>
 
-                    <!-- Quick Stats -->
                     <div class="files-stats">
-                        <div class="stat-chip">
-                            <i class="fas fa-folder"></i>
-                            <span id="folderCount">0 folders</span>
-                        </div>
-                        <div class="stat-chip">
-                            <i class="fas fa-file"></i>
-                            <span id="fileCount">0 files</span>
-                        </div>
-                        <div class="stat-chip">
-                            <i class="fas fa-database"></i>
-                            <span id="storageUsed">0 MB used</span>
-                        </div>
+                        <div class="stat-chip"><i class="fas fa-folder"></i><span id="folderCount">0 folders</span></div>
+                        <div class="stat-chip"><i class="fas fa-file"></i><span id="fileCount">0 files</span></div>
+                        <div class="stat-chip"><i class="fas fa-database"></i><span id="storageUsed">0 MB used</span></div>
                     </div>
 
-                    <!-- Files Grid/List View - EMPTY - JS will populate this -->
                     <div class="files-container" id="filesContainer">
                         <div class="files-grid" id="filesGrid"></div>
                     </div>
 
-                    <!-- Empty State (hidden by default) -->
                     <div class="files-empty-state" id="filesEmptyState" style="display: none;">
-                        <div class="empty-state-icon">
-                            <i class="fas fa-folder-open"></i>
-                        </div>
+                        <div class="empty-state-icon"><i class="fas fa-folder-open"></i></div>
                         <h3>this folder is empty</h3>
                         <p>upload files or create a new folder to get started</p>
                         <div class="empty-state-actions">
-                            <button class="empty-state-btn" id="emptyNewFolderBtn">
-                                <i class="fas fa-folder-plus"></i> new folder
-                            </button>
-                            <button class="empty-state-btn primary" id="emptyUploadBtn">
-                                <i class="fas fa-cloud-upload-alt"></i> upload files
-                            </button>
+                            <button class="empty-state-btn" id="emptyNewFolderBtn"><i class="fas fa-folder-plus"></i> new folder</button>
+                            <button class="empty-state-btn primary" id="emptyUploadBtn"><i class="fas fa-cloud-upload-alt"></i> upload files</button>
                         </div>
                     </div>
 
-                    <!-- Recent Files Section -->
                     <div class="recent-files-section">
                         <div class="section-header">
                             <h3><i class="fas fa-clock"></i> recent files</h3>
                             <button class="view-all-btn" id="viewAllRecent">view all</button>
                         </div>
-                        <div class="recent-files-list" id="recentFilesList">
-                            <!-- Recent files will be injected via JS -->
-                        </div>
+                        <div class="recent-files-list" id="recentFilesList"></div>
                     </div>
                 </div>
             </div>
@@ -504,7 +508,6 @@
                 </div>
                 
                 <div class="settings-container">
-                    <!-- Profile Settings -->
                     <div class="settings-card">
                         <h3><i class="fas fa-user-circle"></i> profile</h3>
                         <div class="settings-group">
@@ -515,12 +518,9 @@
                             <label>display name</label>
                             <input type="text" class="profile-input" id="displayName" placeholder="your name">
                         </div>
-                        <button class="settings-save-btn" id="saveProfileBtn">
-                            <i class="fas fa-save"></i> save profile
-                        </button>
+                        <button class="settings-save-btn" id="saveProfileBtn"><i class="fas fa-save"></i> save profile</button>
                     </div>
 
-                    <!-- Appearance Settings -->
                     <div class="settings-card">
                         <h3><i class="fas fa-palette"></i> appearance</h3>
                         <div class="settings-group">
@@ -528,30 +528,20 @@
                             <div class="theme-options">
                                 <div class="theme-option">
                                     <input type="radio" name="theme" id="themeLight" value="light" checked>
-                                    <label for="themeLight">
-                                        <i class="fas fa-sun"></i>
-                                        <span>light</span>
-                                    </label>
+                                    <label for="themeLight"><i class="fas fa-sun"></i><span>light</span></label>
                                 </div>
                                 <div class="theme-option">
                                     <input type="radio" name="theme" id="themeDark" value="dark">
-                                    <label for="themeDark">
-                                        <i class="fas fa-moon"></i>
-                                        <span>dark</span>
-                                    </label>
+                                    <label for="themeDark"><i class="fas fa-moon"></i><span>dark</span></label>
                                 </div>
                                 <div class="theme-option">
                                     <input type="radio" name="theme" id="themeSystem" value="system">
-                                    <label for="themeSystem">
-                                        <i class="fas fa-desktop"></i>
-                                        <span>system</span>
-                                    </label>
+                                    <label for="themeSystem"><i class="fas fa-desktop"></i><span>system</span></label>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Notifications Settings -->
                     <div class="settings-card">
                         <h3><i class="fas fa-bell"></i> notifications</h3>
                         <div class="setting-row">
@@ -587,7 +577,6 @@
                         </div>
                     </div>
 
-                    <!-- Task Preferences -->
                     <div class="settings-card">
                         <h3><i class="fas fa-tasks"></i> task preferences</h3>
                         <div class="settings-group">
@@ -609,7 +598,6 @@
                         </div>
                     </div>
 
-                    <!-- Data Management -->
                     <div class="settings-card">
                         <h3><i class="fas fa-database"></i> data management</h3>
                         <div class="setting-row">
@@ -618,9 +606,7 @@
                                 <div class="setting-description">download all your tasks as CSV</div>
                                 <span class="pro-badge-small">pro</span>
                             </div>
-                            <button class="settings-btn" id="exportDataBtn" disabled>
-                                <i class="fas fa-download"></i> export
-                            </button>
+                            <button class="settings-btn" id="exportDataBtn" disabled><i class="fas fa-download"></i> export</button>
                         </div>
                         <div class="setting-row">
                             <div class="setting-info">
@@ -628,13 +614,10 @@
                                 <div class="setting-description">import tasks from CSV file</div>
                                 <span class="pro-badge-small">pro</span>
                             </div>
-                            <button class="settings-btn" id="importDataBtn" disabled>
-                                <i class="fas fa-upload"></i> import
-                            </button>
+                            <button class="settings-btn" id="importDataBtn" disabled><i class="fas fa-upload"></i> import</button>
                         </div>
                     </div>
 
-                    <!-- Danger Zone -->
                     <div class="settings-card danger-zone">
                         <h3><i class="fas fa-exclamation-triangle"></i> danger zone</h3>
                         <div class="setting-row">
@@ -642,13 +625,10 @@
                                 <div class="setting-title">clear all tasks</div>
                                 <div class="setting-description">permanently delete all your tasks</div>
                             </div>
-                            <button class="danger-btn" id="clearDataBtn">
-                                <i class="fas fa-trash-alt"></i> clear
-                            </button>
+                            <button class="danger-btn" id="clearDataBtn"><i class="fas fa-trash-alt"></i> clear</button>
                         </div>
                     </div>
 
-                    <!-- Account Info -->
                     <div class="settings-card">
                         <h3><i class="fas fa-info-circle"></i> account</h3>
                         <div class="setting-row">
@@ -663,14 +643,14 @@
                         <div class="setting-row">
                             <div class="setting-info">
                                 <div class="setting-title">version</div>
-                                <div class="setting-description">KwikTask v2.0 freemium</div>
+                                <div class="setting-description">KwikTask v2.0 freemium + notes</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Premium subscription card - show upgrade options -->
+            <!-- Premium subscription card -->
             <div class="premium-container" id="premiumContainer">
                 <div class="monet-card premium" id="premiumCard">
                     <div class="card-icon">
@@ -678,25 +658,27 @@
                     </div>
                     <div class="card-content">
                         <h3>kwiktask pro</h3>
-                        <p>unlimited tasks · analytics · calendar · files · no ads</p>
+                        <p>unlimited tasks · analytics · calendar · files · notes · no ads</p>
                         <div class="feature-comparison">
                             <div class="feature free">
                                 <span>free</span>
                                 <ul>
                                     <li><i class="fas fa-check"></i> 5 tasks max</li>
-                                    <li><i class="fas fa-check"></i> basic checklists</li>
-                                    <li><i class="fas fa-ban"></i> ads supported</li>
+                                    <li><i class="fas fa-ban"></i> notes locked</li>
+                                    <li><i class="fas fa-ban"></i> analytics locked</li>
+                                    <li><i class="fas fa-ban"></i> calendar locked</li>
                                 </ul>
                             </div>
                             <div class="feature pro">
                                 <span>pro</span>
                                 <ul>
                                     <li><i class="fas fa-check"></i> unlimited tasks</li>
+                                    <li><i class="fas fa-check"></i> rich notes + folders</li>
                                     <li><i class="fas fa-check"></i> advanced analytics</li>
-                                    <li><i class="fas fa-check"></i> interactive calendar</li>
-                                    <li><i class="fas fa-check"></i> file storage & organization</li>
+                                    <li><i class="fas fa-check"></i> interactive calendar with time slots</li>
+                                    <li><i class="fas fa-check"></i> week & day views</li>
+                                    <li><i class="fas fa-check"></i> file storage</li>
                                     <li><i class="fas fa-check"></i> no ads</li>
-                                    <li><i class="fas fa-check"></i> export data</li>
                                 </ul>
                             </div>
                         </div>
@@ -712,10 +694,11 @@
         <div class="footer">
             <span>© kwiktask 2026</span>
             <span class="dot">·</span>
-            <span>v2.0 freemium</span>
+            <span>v2.0 freemium + notes</span>
         </div>
     </div>
 
+    <!-- ===== MODALS ===== -->
     <!-- Stripe subscription modal -->
     <div class="modal" id="stripeModal">
         <div class="modal-content">
@@ -732,26 +715,23 @@
                     <ul class="plan-features">
                         <li><i class="fas fa-check"></i> unlimited tasks (free: 5 max)</li>
                         <li><i class="fas fa-check"></i> advanced analytics & insights</li>
-                        <li><i class="fas fa-check"></i> interactive calendar view</li>
+                        <li><i class="fas fa-check"></i> interactive calendar with time slots</li>
+                        <li><i class="fas fa-check"></i> week & day views</li>
                         <li><i class="fas fa-check"></i> file storage & organization</li>
-                        <li><i class="fas fa-check"></i> export to CSV/PDF</li>
+                        <li><i class="fas fa-check"></i> rich notes + folders</li>
                         <li><i class="fas fa-check"></i> no advertisements</li>
                     </ul>
                 </div>
                 <button class="stripe-button" id="stripeCheckoutBtn">
                     <i class="fab fa-stripe"></i> subscribe now
                 </button>
-                <p class="secure-note">
-                    <i class="fas fa-lock"></i> secure payment · cancel anytime
-                </p>
-                <p class="money-back">
-                    14-day money-back guarantee
-                </p>
+                <p class="secure-note"><i class="fas fa-lock"></i> secure payment · cancel anytime</p>
+                <p class="money-back">14-day money-back guarantee</p>
             </div>
         </div>
     </div>
 
-    <!-- Success modal (shown after upgrade) -->
+    <!-- Success modal -->
     <div class="modal" id="successModal">
         <div class="modal-content success-content">
             <div class="modal-header">
@@ -759,16 +739,14 @@
                 <button class="modal-close" id="closeSuccessModal">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="success-icon">
-                    <i class="fas fa-crown"></i>
-                </div>
-                <p class="success-message">you now have unlimited tasks, analytics, calendar, files, and zero ads.</p>
+                <div class="success-icon"><i class="fas fa-crown"></i></div>
+                <p class="success-message">you now have unlimited tasks, analytics, calendar with time slots, files, notes, and zero ads.</p>
                 <button class="success-btn" id="continueBtn">continue to tasks</button>
             </div>
         </div>
     </div>
 
-    <!-- Day Tasks Modal (for calendar) -->
+    <!-- Day Tasks Modal (for month view detail) -->
     <div class="modal" id="dayTasksModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -776,9 +754,7 @@
                 <button class="modal-close" id="closeDayTasksModal">&times;</button>
             </div>
             <div class="modal-body">
-                <ul class="day-tasks-list" id="dayTasksList">
-                    <!-- Tasks for selected day will appear here -->
-                </ul>
+                <ul class="day-tasks-list" id="dayTasksList"></ul>
             </div>
         </div>
     </div>
@@ -806,9 +782,7 @@
                         <div class="color-option" data-color="#6c5ce7" style="background: #6c5ce7;"></div>
                     </div>
                 </div>
-                <button class="create-folder-btn" id="createFolderBtn">
-                    <i class="fas fa-folder-plus"></i> create folder
-                </button>
+                <button class="create-folder-btn" id="createFolderBtn"><i class="fas fa-folder-plus"></i> create folder</button>
             </div>
         </div>
     </div>
@@ -843,23 +817,71 @@
                     </div>
                 </div>
                 <div class="file-preview-actions">
-                    <button class="file-action-btn" id="downloadFileBtn">
-                        <i class="fas fa-download"></i> download
-                    </button>
-                    <button class="file-action-btn" id="renameFileBtn">
-                        <i class="fas fa-pencil-alt"></i> rename
-                    </button>
-                    <button class="file-action-btn" id="moveFileBtn">
-                        <i class="fas fa-folder"></i> move
-                    </button>
-                    <button class="file-action-btn danger" id="deleteFileBtn">
-                        <i class="fas fa-trash-alt"></i> delete
-                    </button>
+                    <button class="file-action-btn" id="downloadFileBtn"><i class="fas fa-download"></i> download</button>
+                    <button class="file-action-btn" id="renameFileBtn"><i class="fas fa-pencil-alt"></i> rename</button>
+                    <button class="file-action-btn" id="moveFileBtn"><i class="fas fa-folder"></i> move</button>
+                    <button class="file-action-btn danger" id="deleteFileBtn"><i class="fas fa-trash-alt"></i> delete</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- ===== NOTE EDITOR MODAL (PRO) ===== -->
+    <div class="modal" id="noteEditorModal">
+        <div class="modal-content note-editor-content">
+            <div class="modal-header">
+                <div class="note-editor-title">
+                    <i class="fas fa-pen"></i>
+                    <input type="text" id="noteTitleInput" placeholder="Note title" autocomplete="off" value="Untitled">
+                </div>
+                <button class="modal-close" id="closeNoteEditor">&times;</button>
+            </div>
+            <div class="modal-body note-editor-body">
+                <div class="note-meta-bar">
+                    <select id="noteFolderSelect" class="note-folder-select">
+                        <option value="personal">📁 personal</option>
+                        <option value="work">💼 work</option>
+                        <option value="ideas">💡 ideas</option>
+                        <option value="other">🗂️ other</option>
+                    </select>
+                    <span class="note-date" id="noteEditorDate"></span>
+                </div>
+                <textarea id="noteBodyTextarea" placeholder="Start writing your note... (markdown style)"></textarea>
+                <div class="note-format-toolbar">
+                    <button class="format-btn" title="bold"><i class="fas fa-bold"></i></button>
+                    <button class="format-btn" title="italic"><i class="fas fa-italic"></i></button>
+                    <button class="format-btn" title="underline"><i class="fas fa-underline"></i></button>
+                    <span class="separator"></span>
+                    <button class="format-btn" title="bullet list"><i class="fas fa-list-ul"></i></button>
+                    <button class="format-btn" title="numbered list"><i class="fas fa-list-ol"></i></button>
+                </div>
+            </div>
+            <div class="modal-footer note-editor-footer">
+                <button class="secondary-btn" id="cancelNoteBtn">cancel</button>
+                <button class="primary-btn" id="saveNoteBtn"><i class="fas fa-save"></i> save note</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Note Confirmation Modal -->
+    <div class="modal" id="deleteNoteModal">
+        <div class="modal-content delete-confirm">
+            <div class="modal-header">
+                <h2><i class="fas fa-trash-alt"></i> delete note</h2>
+                <button class="modal-close" id="closeDeleteNoteModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete "<span id="deleteNoteName"></span>"?</p>
+                <p class="warning-text">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary-btn" id="cancelDeleteNoteBtn">cancel</button>
+                <button class="danger-btn" id="confirmDeleteNoteBtn">delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main app JS (external) -->
     <script type="module" src="app.js"></script>
 </body>
 </html>

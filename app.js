@@ -11,8 +11,9 @@ const stripe = Stripe("pk_test_51SzautGqBhYoGeXbv4LSy6PQVpfO2oPzexUMoCAijD9ELFMt
 // ===== CONFIG =====
 const FREE_TASK_LIMIT = 5;
 const TODO_STORAGE_KEY = "kwiktask_todos";
+const NOTES_STORAGE_KEY = "kwiktask_notes_demo";
 const USE_DEMO_MODE = false;
-const TEST_MODE = true; // Set to true to test Pro features
+const TEST_MODE = true;
 
 // ===== DOM ELEMENTS =====
 const DOM = {
@@ -38,18 +39,21 @@ const DOM = {
     // Navigation
     navItems: document.querySelectorAll('.nav-item'),
     tasksView: document.getElementById('tasks-view'),
+    notesView: document.getElementById('notes-view'),
     analyticsView: document.getElementById('analytics-view'),
     calendarView: document.getElementById('calendar-view'),
     filesView: document.getElementById('files-view'),
     settingsView: document.getElementById('settings-view'),
+    notesLocked: document.getElementById('notesLocked'),
     analyticsLocked: document.getElementById('analyticsLocked'),
     calendarLocked: document.getElementById('calendarLocked'),
     filesLocked: document.getElementById('filesLocked'),
+    notesContent: document.getElementById('notesContent'),
     analyticsContent: document.getElementById('analyticsContent'),
     calendarContent: document.getElementById('calendarContent'),
     filesContent: document.getElementById('filesContent'),
     
-    // Calendar elements
+    // Calendar elements - UPDATED with time slot and grid container
     currentMonth: document.getElementById('currentMonth'),
     calendarStats: document.getElementById('calendarStats'),
     todayBtn: document.getElementById('todayBtn'),
@@ -57,14 +61,17 @@ const DOM = {
     nextMonthBtn: document.getElementById('nextMonthBtn'),
     calendarWeekdays: document.getElementById('calendarWeekdays'),
     calendarGrid: document.getElementById('calendarGrid'),
+    calendarGridContainer: document.getElementById('calendarGridContainer'),
     quickTaskInput: document.getElementById('quickTaskInput'),
     quickTaskDate: document.getElementById('quickTaskDate'),
+    quickTaskTimeSlot: document.getElementById('quickTaskTimeSlot'),
     quickTaskPriority: document.getElementById('quickTaskPriority'),
     quickAddTaskBtn: document.getElementById('quickAddTaskBtn'),
     selectedDayTasks: document.getElementById('selectedDayTasks'),
     selectedDayTitle: document.getElementById('selectedDayTitle'),
     closeSelectedDay: document.getElementById('closeSelectedDay'),
     selectedDayList: document.getElementById('selectedDayList'),
+    calendarViewToggle: document.querySelectorAll('.calendar-view-toggle .view-toggle-btn'),
     
     // Files elements
     filesGrid: document.getElementById('filesGrid'),
@@ -95,6 +102,31 @@ const DOM = {
     closeFilePreview: document.getElementById('closeFilePreview'),
     emptyNewFolderBtn: document.getElementById('emptyNewFolderBtn'),
     emptyUploadBtn: document.getElementById('emptyUploadBtn'),
+    
+    // Notes elements
+    notesGrid: document.getElementById('notesGrid'),
+    notesContainer: document.getElementById('notesContainer'),
+    notesEmptyState: document.getElementById('notesEmptyState'),
+    newNoteBtn: document.getElementById('newNoteBtn'),
+    noteSearchInput: document.getElementById('noteSearchInput'),
+    notesViewToggle: document.querySelectorAll('.notes-view-toggle .view-toggle-btn'),
+    noteFolderChips: document.querySelectorAll('.folder-chip'),
+    recentNotesList: document.getElementById('recentNotesList'),
+    emptyStateNewNoteBtn: document.getElementById('emptyStateNewNoteBtn'),
+    viewAllNotesBtn: document.getElementById('viewAllNotesBtn'),
+    noteEditorModal: document.getElementById('noteEditorModal'),
+    noteTitleInput: document.getElementById('noteTitleInput'),
+    noteBodyTextarea: document.getElementById('noteBodyTextarea'),
+    noteFolderSelect: document.getElementById('noteFolderSelect'),
+    noteEditorDate: document.getElementById('noteEditorDate'),
+    saveNoteBtn: document.getElementById('saveNoteBtn'),
+    cancelNoteBtn: document.getElementById('cancelNoteBtn'),
+    closeNoteEditor: document.getElementById('closeNoteEditor'),
+    deleteNoteModal: document.getElementById('deleteNoteModal'),
+    deleteNoteName: document.getElementById('deleteNoteName'),
+    confirmDeleteNoteBtn: document.getElementById('confirmDeleteNoteBtn'),
+    cancelDeleteNoteBtn: document.getElementById('cancelDeleteNoteBtn'),
+    closeDeleteNoteModal: document.getElementById('closeDeleteNoteModal'),
     
     // Analytics elements
     totalTasksStat: document.getElementById('totalTasksStat'),
@@ -130,16 +162,25 @@ const DOM = {
 let allToDos = [];
 let isPro = false;
 
+// ===== NOTES STATE =====
+let allNotes = [];
+let activeNoteFolder = 'all';
+let notesViewMode = 'grid';
+let currentEditingNoteId = null;
+
 // ===== ANALYTICS STATE =====
 let taskHistory = [];
 let completionData = [];
 let streakData = { current: 0, longest: 0 };
 
-// ===== CALENDAR STATE =====
+// ===== CALENDAR STATE - UPDATED =====
 let currentDate = new Date();
 let currentMonth = currentDate.getMonth();
 let currentYear = currentDate.getFullYear();
 let calendarTasks = [];
+let calendarViewMode = 'month';
+let selectedWeekStart = null;
+let selectedDay = null;
 
 // ===== FILES STATE =====
 let currentFolder = 'root';
@@ -183,6 +224,33 @@ function getFileIcon(type) {
         'txt': 'fa-file-alt'
     };
     return icons[type] || 'fa-file';
+}
+
+function formatDateRelative(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+        return 'today';
+    } else if (diffDays === 1) {
+        return 'yesterday';
+    } else if (diffDays < 7) {
+        return `${diffDays} days ago`;
+    } else {
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+}
+
+function formatTimeSlot(timeSlot) {
+    if (!timeSlot) return '';
+    const [hour, minute] = timeSlot.split(':');
+    const h = parseInt(hour, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 || 12;
+    return `${hour12}:${minute} ${ampm}`;
 }
 
 function showNotification(message, type = 'success') {
@@ -245,6 +313,7 @@ onAuthStateChanged(auth, async (user) => {
 function init() {
     console.log("🚀 Initializing app with isPro =", isPro);
     loadTodos();
+    loadNotes();
     updateUIForTier();
     updateToDoList();
     attachEventListeners();
@@ -399,380 +468,479 @@ function updateTaskCount() {
         : `${active} of ${FREE_TASK_LIMIT} tasks remaining`;
 }
 
-// ================= QUICK ADD TASK (CALENDAR) =================
+// ================= NOTES FUNCTIONS =================
+async function loadNotes() {
+    if (!isPro) {
+        allNotes = [];
+        return;
+    }
+    
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    try {
+        const notesRef = collection(db, "users", user.uid, "notes");
+        const q = query(notesRef, orderBy("updatedAt", "desc"));
+        const notesSnapshot = await getDocs(q);
+        
+        allNotes = [];
+        notesSnapshot.forEach((doc) => {
+            allNotes.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+        
+        console.log(`📝 Loaded ${allNotes.length} notes from Firestore`);
+        
+        if (allNotes.length === 0) {
+            createDemoNotes();
+        }
+        
+    } catch (error) {
+        console.error("Error loading notes:", error);
+        const notesJson = localStorage.getItem(NOTES_STORAGE_KEY) || "[]";
+        allNotes = JSON.parse(notesJson);
+    }
+    
+    renderNotes();
+}
+
+async function createDemoNotes() {
+    const demos = [
+        { title: "Welcome to KwikTask Notes", body: "This is your first note! You can write meeting notes, ideas, journal entries, or anything else. All notes are synced to your account.\n\n✨ Pro tip: Use folders to keep things organized.", folder: "personal", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { title: "Productivity hacks", body: "• Pomodoro 25/5\n• Block distractions\n• Use two lists: Today & Later\n• Review weekly", folder: "ideas", createdAt: new Date(Date.now() - 86400000).toISOString(), updatedAt: new Date(Date.now() - 86400000).toISOString() },
+        { title: "Q2 Strategy", body: "Goals:\n- Increase engagement\n- New onboarding flow\n- Team offsite in June", folder: "work", createdAt: new Date(Date.now() - 172800000).toISOString(), updatedAt: new Date(Date.now() - 172800000).toISOString() }
+    ];
+    
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    for (const demo of demos) {
+        try {
+            const notesRef = collection(db, "users", user.uid, "notes");
+            await addDoc(notesRef, demo);
+        } catch (e) {
+            console.warn("Could not add demo note", e);
+        }
+    }
+    
+    await loadNotes();
+}
+
+async function saveNote() {
+    if (!isPro) {
+        alert("Notes are a Pro feature. Please upgrade.");
+        return;
+    }
+    
+    const title = DOM.noteTitleInput?.value.trim() || "Untitled";
+    const body = DOM.noteBodyTextarea?.value.trim() || "";
+    const folder = DOM.noteFolderSelect?.value || "personal";
+    
+    if (!body && !title) {
+        showNotification("Cannot save empty note", "error");
+        return;
+    }
+    
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    const now = new Date().toISOString();
+    
+    try {
+        const notesRef = collection(db, "users", user.uid, "notes");
+        
+        if (currentEditingNoteId) {
+            const noteRef = doc(db, "users", user.uid, "notes", currentEditingNoteId);
+            await updateDoc(noteRef, {
+                title,
+                body,
+                folder,
+                updatedAt: now
+            });
+            showNotification('✏️ Note updated');
+        } else {
+            await addDoc(notesRef, {
+                title,
+                body,
+                folder,
+                createdAt: now,
+                updatedAt: now
+            });
+            showNotification('📝 Note created');
+        }
+        
+        DOM.noteEditorModal?.classList.remove('active');
+        await loadNotes();
+        
+        currentEditingNoteId = null;
+        DOM.noteTitleInput.value = '';
+        DOM.noteBodyTextarea.value = '';
+        DOM.noteFolderSelect.value = 'personal';
+        
+    } catch (error) {
+        console.error("Error saving note:", error);
+        alert("Failed to save note");
+    }
+}
+
+async function deleteNote(noteId) {
+    if (!isPro) return;
+    
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    try {
+        await deleteDoc(doc(db, "users", user.uid, "notes", noteId));
+        allNotes = allNotes.filter(n => n.id !== noteId);
+        renderNotes();
+        DOM.deleteNoteModal?.classList.remove('active');
+        showNotification('🗑️ Note deleted');
+    } catch (error) {
+        console.error("Error deleting note:", error);
+        alert("Failed to delete note");
+    }
+}
+
+function openNewNoteModal() {
+    currentEditingNoteId = null;
+    DOM.noteTitleInput.value = '';
+    DOM.noteBodyTextarea.value = '';
+    DOM.noteFolderSelect.value = 'personal';
+    
+    const now = new Date();
+    DOM.noteEditorDate.textContent = now.toLocaleDateString('en-US', { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+    });
+    
+    DOM.noteEditorModal?.classList.add('active');
+}
+
+function openEditNoteModal(note) {
+    currentEditingNoteId = note.id;
+    DOM.noteTitleInput.value = note.title || '';
+    DOM.noteBodyTextarea.value = note.body || '';
+    DOM.noteFolderSelect.value = note.folder || 'personal';
+    
+    const date = note.updatedAt ? new Date(note.updatedAt) : new Date();
+    DOM.noteEditorDate.textContent = 'last edited ' + formatDateRelative(note.updatedAt);
+    
+    DOM.noteEditorModal?.classList.add('active');
+}
+
+function renderNotes() {
+    if (!DOM.notesGrid) return;
+    
+    let filteredNotes = [...allNotes];
+    if (activeNoteFolder !== 'all') {
+        filteredNotes = filteredNotes.filter(n => n.folder === activeNoteFolder);
+    }
+    
+    const searchTerm = DOM.noteSearchInput?.value.toLowerCase() || '';
+    if (searchTerm) {
+        filteredNotes = filteredNotes.filter(n => 
+            (n.title && n.title.toLowerCase().includes(searchTerm)) || 
+            (n.body && n.body.toLowerCase().includes(searchTerm))
+        );
+    }
+    
+    if (filteredNotes.length === 0) {
+        if (DOM.notesContainer) DOM.notesContainer.style.display = 'none';
+        if (DOM.notesEmptyState) {
+            DOM.notesEmptyState.style.display = 'block';
+            const emptyHeading = DOM.notesEmptyState.querySelector('h3');
+            if (emptyHeading) {
+                emptyHeading.textContent = searchTerm ? 'No matching notes' : 'No notes yet';
+            }
+        }
+        return;
+    } else {
+        if (DOM.notesContainer) DOM.notesContainer.style.display = 'block';
+        if (DOM.notesEmptyState) DOM.notesEmptyState.style.display = 'none';
+    }
+    
+    DOM.notesGrid.className = `notes-grid ${notesViewMode === 'list' ? 'list-view' : ''}`;
+    DOM.notesGrid.innerHTML = '';
+    
+    filteredNotes.forEach(note => {
+        const noteCard = createNoteCardElement(note);
+        DOM.notesGrid.appendChild(noteCard);
+    });
+    
+    renderRecentNotes();
+}
+
+function createNoteCardElement(note) {
+    const div = document.createElement('div');
+    div.className = 'note-card';
+    div.dataset.id = note.id;
+    
+    const folderIcons = {
+        'personal': '🧑',
+        'work': '💼',
+        'ideas': '💡',
+        'other': '🗂️'
+    };
+    
+    const folderIcon = folderIcons[note.folder] || '📓';
+    const folderLabel = note.folder || 'other';
+    
+    const bodyPreview = note.body ? note.body.substring(0, 100).replace(/\n/g, ' ') : '';
+    const previewText = bodyPreview + (note.body && note.body.length > 100 ? '...' : '');
+    
+    const dateStr = formatDateRelative(note.updatedAt || note.createdAt);
+    
+    div.innerHTML = `
+        <div class="note-card-header">
+            <span class="note-folder-badge">${folderIcon} ${folderLabel}</span>
+            <button class="note-card-menu" data-id="${note.id}">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
+        </div>
+        <h4 class="note-card-title">${escapeHTML(note.title || 'Untitled')}</h4>
+        <p class="note-card-preview">${escapeHTML(previewText)}</p>
+        <div class="note-card-footer">
+            <span class="note-date">${dateStr}</span>
+        </div>
+    `;
+    
+    div.addEventListener('click', (e) => {
+        if (e.target.closest('.note-card-menu')) return;
+        openEditNoteModal(note);
+    });
+    
+    const menuBtn = div.querySelector('.note-card-menu');
+    menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (DOM.deleteNoteName) DOM.deleteNoteName.textContent = note.title || 'Untitled';
+        DOM.deleteNoteModal.dataset.noteId = note.id;
+        DOM.deleteNoteModal?.classList.add('active');
+    });
+    
+    return div;
+}
+
+function renderRecentNotes() {
+    if (!DOM.recentNotesList) return;
+    
+    const recent = [...allNotes]
+        .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
+        .slice(0, 3);
+    
+    if (recent.length === 0) {
+        DOM.recentNotesList.innerHTML = '<div style="padding: 1rem; text-align: center; color: #999;">No recent notes</div>';
+        return;
+    }
+    
+    let html = '';
+    recent.forEach(note => {
+        const date = formatDateRelative(note.updatedAt || note.createdAt);
+        html += `
+            <div class="recent-note-item" data-id="${note.id}">
+                <i class="fas fa-file-alt"></i>
+                <span>${escapeHTML(note.title || 'Untitled')}</span>
+                <span>${date}</span>
+            </div>
+        `;
+    });
+    
+    DOM.recentNotesList.innerHTML = html;
+    
+    DOM.recentNotesList.querySelectorAll('.recent-note-item').forEach(el => {
+        el.addEventListener('click', () => {
+            const noteId = el.dataset.id;
+            const note = allNotes.find(n => n.id === noteId);
+            if (note) openEditNoteModal(note);
+        });
+    });
+}
+
+function setActiveNoteFolder(folderId) {
+    activeNoteFolder = folderId;
+    
+    DOM.noteFolderChips.forEach(chip => {
+        chip.classList.remove('active');
+        if (chip.dataset.folder === folderId) {
+            chip.classList.add('active');
+        }
+    });
+    
+    renderNotes();
+}
+
+function toggleNotesViewMode(mode) {
+    notesViewMode = mode;
+    
+    DOM.notesViewToggle.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.view === mode) {
+            btn.classList.add('active');
+        }
+    });
+    
+    renderNotes();
+}
+
+function searchNotes(query) {
+    renderNotes();
+}
+
+function attachNotesEventListeners() {
+    DOM.newNoteBtn?.addEventListener('click', openNewNoteModal);
+    DOM.emptyStateNewNoteBtn?.addEventListener('click', openNewNoteModal);
+    DOM.saveNoteBtn?.addEventListener('click', saveNote);
+    DOM.cancelNoteBtn?.addEventListener('click', () => {
+        DOM.noteEditorModal?.classList.remove('active');
+        currentEditingNoteId = null;
+    });
+    DOM.closeNoteEditor?.addEventListener('click', () => {
+        DOM.noteEditorModal?.classList.remove('active');
+        currentEditingNoteId = null;
+    });
+    DOM.confirmDeleteNoteBtn?.addEventListener('click', () => {
+        const noteId = DOM.deleteNoteModal?.dataset.noteId;
+        if (noteId) deleteNote(noteId);
+    });
+    DOM.cancelDeleteNoteBtn?.addEventListener('click', () => {
+        DOM.deleteNoteModal?.classList.remove('active');
+    });
+    DOM.closeDeleteNoteModal?.addEventListener('click', () => {
+        DOM.deleteNoteModal?.classList.remove('active');
+    });
+    DOM.noteFolderChips?.forEach(chip => {
+        chip.addEventListener('click', () => {
+            const folder = chip.dataset.folder;
+            if (folder) setActiveNoteFolder(folder);
+        });
+    });
+    DOM.noteSearchInput?.addEventListener('input', (e) => {
+        searchNotes(e.target.value);
+    });
+    DOM.notesViewToggle?.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mode = btn.dataset.view;
+            toggleNotesViewMode(mode);
+        });
+    });
+    DOM.viewAllNotesBtn?.addEventListener('click', () => {
+        setActiveNoteFolder('all');
+    });
+}
+
+// ================= UPDATED CALENDAR FUNCTIONS WITH TIME SLOTS =================
+
+function initCalendar() {
+    console.log("📅 Initializing calendar with time slots...");
+    loadCalendarTasks();
+    
+    if (DOM.quickTaskDate) {
+        const today = new Date().toISOString().split('T')[0];
+        DOM.quickTaskDate.value = today;
+    }
+    
+    if (DOM.quickTaskTimeSlot) {
+        DOM.quickTaskTimeSlot.value = '09:00';
+    }
+    
+    switchCalendarView('month');
+}
+
+function loadCalendarTasks() {
+    calendarTasks = [...allToDos].map(task => ({
+        ...task,
+        date: task.createdAt ? task.createdAt.split('T')[0] : null,
+        timeSlot: task.timeSlot || null,
+        hasTimeSlot: !!task.timeSlot
+    }));
+}
+
 function quickAddTask() {
     const taskText = DOM.quickTaskInput?.value.trim();
     const taskDate = DOM.quickTaskDate?.value;
+    const taskTimeSlot = DOM.quickTaskTimeSlot?.value;
     const taskPriority = DOM.quickTaskPriority?.value;
     
     if (!taskText) {
-        alert("Please enter a task");
+        showNotification('Please enter a task', 'error');
         return;
     }
     
     if (!taskDate) {
-        alert("Please select a date");
+        showNotification('Please select a date', 'error');
         return;
     }
     
-    // Create new task with the selected date
+    let createdAt;
+    if (taskTimeSlot) {
+        createdAt = new Date(`${taskDate}T${taskTimeSlot}:00`).toISOString();
+    } else {
+        createdAt = new Date(taskDate).toISOString();
+    }
+    
     const newTask = {
         id: Date.now().toString(),
         text: taskText,
         completed: false,
         priority: taskPriority || 'medium',
-        createdAt: new Date(taskDate).toISOString(),
-        completedAt: null
+        createdAt: createdAt,
+        completedAt: null,
+        date: taskDate,
+        timeSlot: taskTimeSlot || null,
+        hasTimeSlot: !!taskTimeSlot
     };
     
     allToDos.push(newTask);
     saveTodos();
     
-    // Clear input
     DOM.quickTaskInput.value = '';
-    DOM.quickTaskDate.value = '';
+    DOM.quickTaskDate.value = new Date().toISOString().split('T')[0];
+    DOM.quickTaskTimeSlot.value = '09:00';
     
-    // Refresh calendar to show new task
     loadCalendarTasks();
-    renderCalendar();
     
-    // Show success message
+    if (calendarViewMode === 'month') {
+        renderCalendar();
+    } else if (calendarViewMode === 'week') {
+        renderWeekView();
+    } else if (calendarViewMode === 'day') {
+        renderDayView();
+    }
+    
     showNotification('✅ Task added to calendar!');
 }
 
-// ================= ANALYTICS FUNCTIONS =================
-function initAnalytics() {
-    console.log("📊 Initializing analytics with REAL task data...");
+function switchCalendarView(viewMode) {
+    calendarViewMode = viewMode;
     
-    // Make sure we have the latest tasks
-    loadTodos();
-    taskHistory = [...allToDos];
-    
-    // Small delay to ensure DOM is ready
-    setTimeout(() => {
-        renderAnalytics();
-        renderCharts();
-        renderProductivityInsights();
-    }, 100);
-}
-
-function renderAnalytics() {
-    const total = taskHistory.length;
-    const completed = taskHistory.filter(t => t.completed).length;
-    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-    
-    // Calculate average per day (last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const recentTasks = taskHistory.filter(t => {
-        if (!t.createdAt) return false;
-        return new Date(t.createdAt) > thirtyDaysAgo;
-    });
-    const avgPerDay = recentTasks.length > 0 ? (recentTasks.length / 30).toFixed(1) : 0;
-    
-    // Calculate streaks
-    calculateStreaks();
-    
-    // Update DOM
-    if (DOM.totalTasksStat) DOM.totalTasksStat.textContent = total;
-    if (DOM.completedTasksStat) DOM.completedTasksStat.textContent = completed;
-    if (DOM.completionRateStat) DOM.completionRateStat.textContent = `${completionRate}%`;
-    if (DOM.avgTasksStat) DOM.avgTasksStat.textContent = avgPerDay;
-    if (DOM.currentStreakStat) DOM.currentStreakStat.textContent = streakData.current;
-    if (DOM.longestStreakStat) DOM.longestStreakStat.textContent = streakData.longest;
-}
-
-function calculateStreaks() {
-    if (taskHistory.length === 0) {
-        streakData = { current: 0, longest: 0 };
-        return;
-    }
-    
-    // Get all completed tasks with unique dates
-    const completedDates = taskHistory
-        .filter(t => t.completed && t.completedAt)
-        .map(t => new Date(t.completedAt).toDateString())
-        .filter((value, index, self) => self.indexOf(value) === index)
-        .sort((a, b) => new Date(a) - new Date(b));
-    
-    if (completedDates.length === 0) {
-        streakData = { current: 0, longest: 0 };
-        return;
-    }
-    
-    let currentStreak = 0;
-    let longestStreak = 1;
-    let streakCount = 1;
-    
-    // Calculate longest streak
-    for (let i = 1; i < completedDates.length; i++) {
-        const prevDate = new Date(completedDates[i - 1]);
-        const currDate = new Date(completedDates[i]);
-        const diffDays = Math.round((currDate - prevDate) / (1000 * 60 * 60 * 24));
-        
-        if (diffDays === 1) {
-            streakCount++;
-            longestStreak = Math.max(longestStreak, streakCount);
-        } else {
-            streakCount = 1;
-        }
-    }
-    
-    // Calculate current streak
-    const today = new Date().toDateString();
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
-    
-    if (completedDates.includes(today)) {
-        currentStreak = 1;
-        let checkDate = yesterday;
-        let daysBack = 1;
-        
-        while (completedDates.includes(checkDate)) {
-            currentStreak++;
-            daysBack++;
-            checkDate = new Date(Date.now() - (daysBack * 86400000)).toDateString();
-        }
-    } else if (completedDates.includes(yesterday)) {
-        currentStreak = 1;
-        let checkDate = new Date(Date.now() - (2 * 86400000)).toDateString();
-        let daysBack = 2;
-        
-        while (completedDates.includes(checkDate)) {
-            currentStreak++;
-            daysBack++;
-            checkDate = new Date(Date.now() - (daysBack * 86400000)).toDateString();
-        }
-    }
-    
-    streakData = { 
-        current: currentStreak, 
-        longest: Math.max(longestStreak, currentStreak) 
-    };
-}
-
-function renderCharts() {
-    if (typeof Chart === 'undefined') {
-        console.warn("Chart.js not loaded");
-        return;
-    }
-    
-    // Weekly activity data from REAL tasks
-    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const weeklyData = [0, 0, 0, 0, 0, 0, 0];
-    
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
-    
-    taskHistory.forEach(task => {
-        if (task.completed && task.completedAt) {
-            const taskDate = new Date(task.completedAt);
-            if (taskDate > sevenDaysAgo) {
-                const dayIndex = taskDate.getDay();
-                weeklyData[dayIndex]++;
-            }
+    DOM.calendarViewToggle.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.view === viewMode) {
+            btn.classList.add('active');
         }
     });
     
-    // Weekly Chart
-    if (DOM.weeklyChart) {
-        if (window.weeklyChartInstance) {
-            window.weeklyChartInstance.destroy();
+    if (!DOM.calendarGridContainer) return;
+    
+    if (viewMode === 'month') {
+        renderCalendar();
+    } else if (viewMode === 'week') {
+        if (!selectedWeekStart) {
+            const today = new Date();
+            const day = today.getDay();
+            const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+            selectedWeekStart = new Date(today.setDate(diff));
         }
-        
-        const ctx = DOM.weeklyChart.getContext('2d');
-        window.weeklyChartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: weekDays,
-                datasets: [{
-                    label: 'Tasks Completed',
-                    data: weeklyData,
-                    backgroundColor: '#000',
-                    borderRadius: 6,
-                    barPercentage: 0.7
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { backgroundColor: '#000' }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: '#f0f0f0' },
-                        ticks: { stepSize: 1 }
-                    },
-                    x: {
-                        grid: { display: false }
-                    }
-                }
-            }
-        });
+        renderWeekView();
+    } else if (viewMode === 'day') {
+        if (!selectedDay) {
+            selectedDay = new Date().toISOString().split('T')[0];
+        }
+        renderDayView();
     }
-    
-    // Time of day chart from REAL tasks
-    const timeSlots = [0, 0, 0, 0]; // Morning, Afternoon, Evening, Night
-    
-    taskHistory.forEach(task => {
-        if (task.completed && task.completedAt) {
-            const hour = new Date(task.completedAt).getHours();
-            if (hour >= 5 && hour < 12) timeSlots[0]++; // Morning
-            else if (hour >= 12 && hour < 17) timeSlots[1]++; // Afternoon
-            else if (hour >= 17 && hour < 21) timeSlots[2]++; // Evening
-            else timeSlots[3]++; // Night
-        }
-    });
-    
-    const hasData = timeSlots.some(slot => slot > 0);
-    
-    if (DOM.timeOfDayChart) {
-        if (window.timeChartInstance) {
-            window.timeChartInstance.destroy();
-        }
-        
-        const ctx = DOM.timeOfDayChart.getContext('2d');
-        window.timeChartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Morning (5am-12pm)', 'Afternoon (12pm-5pm)', 'Evening (5pm-9pm)', 'Night (9pm-5am)'],
-                datasets: [{
-                    data: hasData ? timeSlots : [25, 25, 25, 25],
-                    backgroundColor: ['#000', '#333', '#666', '#999'],
-                    borderWidth: 0,
-                    hoverOffset: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { 
-                        position: 'bottom',
-                        labels: { boxWidth: 12, padding: 15 }
-                    },
-                    tooltip: { backgroundColor: '#000' }
-                },
-                cutout: '65%'
-            }
-        });
-    }
-}
-
-function renderProductivityInsights() {
-    if (!DOM.productivityInsights) return;
-    
-    const total = taskHistory.length;
-    const completed = taskHistory.filter(t => t.completed).length;
-    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-    
-    let insights = [];
-    
-    if (total === 0) {
-        insights.push(`<li><i class="fas fa-plus-circle"></i> Add your first task to see insights!</li>`);
-    } else {
-        if (streakData.current > 0) {
-            insights.push(`<li><i class="fas fa-fire"></i> ${streakData.current} day streak! Keep it up! 🔥</li>`);
-        }
-        
-        if (streakData.longest > 0) {
-            insights.push(`<li><i class="fas fa-trophy"></i> Longest streak: ${streakData.longest} days 🏆</li>`);
-        }
-        
-        if (completionRate > 70) {
-            insights.push(`<li><i class="fas fa-chart-line"></i> ${completionRate}% completion rate - you're crushing it! 🎯</li>`);
-        } else if (completionRate < 30 && total > 5) {
-            insights.push(`<li><i class="fas fa-lightbulb"></i> Try breaking down large tasks into smaller ones</li>`);
-        }
-        
-        const mostProductiveDay = getMostProductiveDay();
-        if (mostProductiveDay) {
-            insights.push(`<li><i class="fas fa-calendar-check"></i> Most productive on ${mostProductiveDay}s 📊</li>`);
-        }
-        
-        const bestTime = getBestTimeOfDay();
-        if (bestTime) {
-            insights.push(`<li><i class="fas fa-clock"></i> Best time to work: ${bestTime} ⏰</li>`);
-        }
-    }
-    
-    if (insights.length === 0) {
-        insights.push(`<li><i class="fas fa-chart-line"></i> Keep going! Your productivity will grow 📈</li>`);
-    }
-    
-    DOM.productivityInsights.innerHTML = insights.join('');
-}
-
-function getMostProductiveDay() {
-    const dayCount = [0, 0, 0, 0, 0, 0, 0];
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    
-    taskHistory.forEach(task => {
-        if (task.completed && task.completedAt) {
-            const day = new Date(task.completedAt).getDay();
-            dayCount[day]++;
-        }
-    });
-    
-    const max = Math.max(...dayCount);
-    if (max === 0) return null;
-    
-    const index = dayCount.indexOf(max);
-    return days[index];
-}
-
-function getBestTimeOfDay() {
-    const timeSlots = [0, 0, 0, 0];
-    const slots = ['Morning', 'Afternoon', 'Evening', 'Night'];
-    
-    taskHistory.forEach(task => {
-        if (task.completed && task.completedAt) {
-            const hour = new Date(task.completedAt).getHours();
-            if (hour >= 5 && hour < 12) timeSlots[0]++;
-            else if (hour >= 12 && hour < 17) timeSlots[1]++;
-            else if (hour >= 17 && hour < 21) timeSlots[2]++;
-            else timeSlots[3]++;
-        }
-    });
-    
-    const max = Math.max(...timeSlots);
-    if (max === 0) return null;
-    
-    const index = timeSlots.indexOf(max);
-    return slots[index];
-}
-
-function exportUserData() {
-    const csv = [
-        'Task,Completed,Created At,Completed At,Priority',
-        ...allToDos.map(t => 
-            `"${t.text}",${t.completed},${t.createdAt || ''},${t.completedAt || ''},${t.priority || 'medium'}`
-        )
-    ].join('\n');
-    
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `kwiktask-export-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-    
-    showNotification('✅ Data exported successfully!');
-}
-
-// ================= CALENDAR FUNCTIONS =================
-function initCalendar() {
-    console.log("📅 Initializing calendar with REAL tasks...");
-    loadCalendarTasks();
-    renderCalendar();
-}
-
-function loadCalendarTasks() {
-    calendarTasks = [...allToDos];
 }
 
 function renderCalendar() {
@@ -793,7 +961,6 @@ function renderCalendar() {
     
     DOM.calendarGrid.innerHTML = '';
     
-    // Add weekday headers
     if (DOM.calendarWeekdays) {
         DOM.calendarWeekdays.innerHTML = '';
         const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -801,96 +968,366 @@ function renderCalendar() {
             const dayHeader = document.createElement('div');
             dayHeader.className = 'calendar-weekday';
             dayHeader.textContent = day;
+            dayHeader.addEventListener('click', () => {
+                const weekStart = getWeekStartFromDay(day);
+                selectedWeekStart = weekStart;
+                switchCalendarView('week');
+            });
             DOM.calendarWeekdays.appendChild(dayHeader);
         });
     }
     
-    // Add empty cells for days before month start
     for (let i = 0; i < firstDay; i++) {
         const emptyDay = document.createElement('div');
         emptyDay.className = 'calendar-day empty';
         DOM.calendarGrid.appendChild(emptyDay);
     }
     
-    // Add actual days
     const today = new Date();
     for (let i = 1; i <= daysInMonth; i++) {
         const dayCell = document.createElement('div');
         dayCell.className = 'calendar-day';
         dayCell.dataset.date = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
         
-        // Check if today
         if (currentYear === today.getFullYear() && 
             currentMonth === today.getMonth() && 
             i === today.getDate()) {
             dayCell.classList.add('today');
         }
         
-        // Day number
         const dayNumber = document.createElement('span');
         dayNumber.className = 'day-number';
         dayNumber.textContent = i;
         dayCell.appendChild(dayNumber);
         
-        // Get tasks for this day
         const dateStr = dayCell.dataset.date;
-        const dayTasks = calendarTasks.filter(task => {
-            const taskDate = task.createdAt ? task.createdAt.split('T')[0] : '';
-            return taskDate === dateStr;
-        });
+        const dayTasks = calendarTasks.filter(task => task.date === dateStr);
         
-        // Add task indicators
         if (dayTasks.length > 0) {
             const taskIndicator = document.createElement('div');
             taskIndicator.className = 'task-indicator';
             
             const completedCount = dayTasks.filter(t => t.completed).length;
+            const scheduledCount = dayTasks.filter(t => t.hasTimeSlot).length;
+            
             taskIndicator.innerHTML = `
                 <span class="task-count">📋 ${dayTasks.length}</span>
+                ${scheduledCount > 0 ? `<span class="scheduled-count">⏰ ${scheduledCount}</span>` : ''}
                 ${completedCount > 0 ? `<span class="completed-count">✅ ${completedCount}</span>` : ''}
             `;
             dayCell.appendChild(taskIndicator);
-            
-            // Make day clickable
-            dayCell.addEventListener('click', () => showDayTasks(dateStr, dayTasks));
         }
+        
+        dayCell.addEventListener('click', () => {
+            selectedDay = dateStr;
+            switchCalendarView('day');
+        });
         
         DOM.calendarGrid.appendChild(dayCell);
     }
 }
 
-function showDayTasks(dateStr, tasks) {
-    if (!DOM.selectedDayTasks || !DOM.selectedDayTitle || !DOM.selectedDayList) return;
+function getWeekStartFromDay(dayName) {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const targetDayIndex = days.indexOf(dayName);
+    const today = new Date();
+    const currentDayIndex = today.getDay();
+    const diff = targetDayIndex - currentDayIndex;
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() + diff);
+    return weekStart;
+}
+
+function renderWeekView() {
+    if (!DOM.calendarGridContainer || !selectedWeekStart) return;
     
-    const date = new Date(dateStr);
-    DOM.selectedDayTitle.textContent = date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+    const weekStart = new Date(selectedWeekStart);
+    const weekDays = [];
+    
+    for (let i = 0; i < 7; i++) {
+        const day = new Date(weekStart);
+        day.setDate(weekStart.getDate() + i);
+        weekDays.push(day);
+    }
+    
+    const weekStartStr = weekDays[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const weekEndStr = weekDays[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    if (DOM.currentMonth) {
+        DOM.currentMonth.textContent = `${weekStartStr} - ${weekEndStr}`;
+    }
+    
+    const totalTasks = calendarTasks.length;
+    const completedTasks = calendarTasks.filter(t => t.completed).length;
+    if (DOM.calendarStats) {
+        DOM.calendarStats.textContent = `${totalTasks} tasks · ${completedTasks} completed`;
+    }
+    
+    let html = `
+        <div class="calendar-weekdays">
+            <div class="calendar-weekday">Mon</div>
+            <div class="calendar-weekday">Tue</div>
+            <div class="calendar-weekday">Wed</div>
+            <div class="calendar-weekday">Thu</div>
+            <div class="calendar-weekday">Fri</div>
+            <div class="calendar-weekday">Sat</div>
+            <div class="calendar-weekday">Sun</div>
+        </div>
+        <div class="calendar-week-grid">
+    `;
+    
+    weekDays.forEach((day, index) => {
+        const dateStr = day.toISOString().split('T')[0];
+        const dayTasks = calendarTasks.filter(task => task.date === dateStr);
+        const isToday = day.toDateString() === new Date().toDateString();
+        
+        html += `
+            <div class="calendar-week-day ${isToday ? 'today' : ''}" data-date="${dateStr}">
+                <div class="day-header">
+                    <span class="day-name">${day.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                    <span class="day-number">${day.getDate()}</span>
+                </div>
+                <div class="day-tasks-container" id="week-day-tasks-${dateStr}">
+        `;
+        
+        const scheduledForDay = dayTasks.filter(t => t.hasTimeSlot).sort((a, b) => {
+            return (a.timeSlot || '').localeCompare(b.timeSlot || '');
+        });
+        
+        scheduledForDay.forEach(task => {
+            const timeDisplay = task.timeSlot ? formatTimeSlot(task.timeSlot) : '';
+            html += `
+                <div class="week-task-item ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
+                    <span class="task-time">${timeDisplay}</span>
+                    <span class="task-text">${escapeHTML(task.text)}</span>
+                    <span class="task-priority priority-${task.priority}"></span>
+                </div>
+            `;
+        });
+        
+        const unscheduled = dayTasks.filter(t => !t.hasTimeSlot);
+        unscheduled.forEach(task => {
+            html += `
+                <div class="week-task-item unscheduled ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
+                    <span class="task-time">📋</span>
+                    <span class="task-text">${escapeHTML(task.text)}</span>
+                    <span class="task-priority priority-${task.priority}"></span>
+                </div>
+            `;
+        });
+        
+        if (dayTasks.length === 0) {
+            html += `<div class="no-tasks">no tasks</div>`;
+        }
+        
+        html += `
+                </div>
+            </div>
+        `;
     });
     
-    DOM.selectedDayList.innerHTML = '';
+    html += `
+        </div>
+        <div class="week-navigation">
+            <button class="week-nav-btn" id="prevWeekBtn"><i class="fas fa-chevron-left"></i> previous week</button>
+            <button class="week-nav-btn" id="nextWeekBtn">next week <i class="fas fa-chevron-right"></i></button>
+        </div>
+    `;
     
-    if (tasks.length === 0) {
-        DOM.selectedDayList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No tasks for this day</div>';
-    } else {
-        tasks.sort((a, b) => {
-            if (a.completed === b.completed) return 0;
-            return a.completed ? 1 : -1;
-        }).forEach(task => {
-            const taskItem = document.createElement('div');
-            taskItem.className = `selected-day-task-item ${task.completed ? 'completed' : ''}`;
-            taskItem.innerHTML = `
-                <i class="fas ${task.completed ? 'fa-check-circle' : 'fa-circle'}" style="color: ${task.completed ? '#00b894' : '#666'};"></i>
-                <span class="task-text">${escapeHTML(task.text)}</span>
-                <span class="task-time">${task.createdAt ? new Date(task.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
-            `;
-            DOM.selectedDayList.appendChild(taskItem);
+    DOM.calendarGridContainer.innerHTML = html;
+    attachWeekViewListeners();
+}
+
+function renderDayView() {
+    if (!DOM.calendarGridContainer || !selectedDay) return;
+    
+    const date = new Date(selectedDay);
+    const dateStr = selectedDay;
+    const dayTasks = calendarTasks.filter(task => task.date === dateStr);
+    
+    if (DOM.currentMonth) {
+        DOM.currentMonth.textContent = date.toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            month: 'long', 
+            day: 'numeric', 
+            year: 'numeric' 
         });
     }
     
-    DOM.selectedDayTasks.style.display = 'block';
+    const completedTasks = dayTasks.filter(t => t.completed).length;
+    if (DOM.calendarStats) {
+        DOM.calendarStats.textContent = `${dayTasks.length} tasks · ${completedTasks} completed`;
+    }
+    
+    let html = `
+        <div class="day-view-container">
+            <div class="day-view-header">
+                <button class="day-nav-btn" id="prevDayBtn"><i class="fas fa-chevron-left"></i> yesterday</button>
+                <button class="day-nav-btn" id="nextDayBtn">tomorrow <i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="day-timeline">
+    `;
+    
+    for (let hour = 8; hour <= 20; hour++) {
+        for (let minute = 0; minute < 60; minute += 30) {
+            const timeSlot = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+            const slotTasks = dayTasks.filter(t => t.timeSlot === timeSlot);
+            
+            html += `
+                <div class="day-timeline-hour" data-time="${timeSlot}">
+                    <div class="hour-label">${formatTimeSlot(timeSlot)}</div>
+                    <div class="hour-tasks" id="hour-tasks-${dateStr}-${timeSlot.replace(':', '-')}">
+            `;
+            
+            slotTasks.forEach(task => {
+                html += `
+                    <div class="day-task-item ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
+                        <input type="checkbox" ${task.completed ? 'checked' : ''} data-task-id="${task.id}" class="day-task-checkbox">
+                        <span class="task-text">${escapeHTML(task.text)}</span>
+                        <span class="task-priority priority-${task.priority}"></span>
+                        <button class="task-delete-btn" data-task-id="${task.id}"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    const unscheduledTasks = dayTasks.filter(t => !t.timeSlot);
+    if (unscheduledTasks.length > 0) {
+        html += `
+            <div class="unscheduled-tasks-section">
+                <h4>unscheduled</h4>
+        `;
+        
+        unscheduledTasks.forEach(task => {
+            html += `
+                <div class="day-task-item unscheduled ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
+                    <input type="checkbox" ${task.completed ? 'checked' : ''} data-task-id="${task.id}" class="day-task-checkbox">
+                    <span class="task-text">${escapeHTML(task.text)}</span>
+                    <span class="task-priority priority-${task.priority}"></span>
+                    <button class="task-delete-btn" data-task-id="${task.id}"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+        });
+        
+        html += `</div>`;
+    }
+    
+    html += `
+            </div>
+        </div>
+    `;
+    
+    DOM.calendarGridContainer.innerHTML = html;
+    attachDayViewListeners();
+}
+
+function attachWeekViewListeners() {
+    document.querySelectorAll('.calendar-week-day').forEach(dayEl => {
+        dayEl.addEventListener('click', (e) => {
+            if (e.target.closest('.week-task-item') || e.target.closest('.week-nav-btn')) return;
+            const date = dayEl.dataset.date;
+            selectedDay = date;
+            switchCalendarView('day');
+        });
+    });
+    
+    document.querySelectorAll('.week-task-item').forEach(taskEl => {
+        taskEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const taskId = taskEl.dataset.taskId;
+            const task = allToDos.find(t => t.id === taskId);
+            if (task) {
+                task.completed = !task.completed;
+                task.completedAt = task.completed ? new Date().toISOString() : null;
+                saveTodos();
+                loadCalendarTasks();
+                renderWeekView();
+                showNotification(task.completed ? '✅ Task completed' : '↩️ Task reopened');
+            }
+        });
+    });
+    
+    document.getElementById('prevWeekBtn')?.addEventListener('click', previousWeek);
+    document.getElementById('nextWeekBtn')?.addEventListener('click', nextWeek);
+}
+
+function attachDayViewListeners() {
+    document.querySelectorAll('.day-task-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            const taskId = e.target.dataset.taskId;
+            const task = allToDos.find(t => t.id === taskId);
+            if (task) {
+                task.completed = e.target.checked;
+                task.completedAt = task.completed ? new Date().toISOString() : null;
+                saveTodos();
+                loadCalendarTasks();
+                renderDayView();
+                showNotification(task.completed ? '✅ Task completed' : '↩️ Task reopened');
+            }
+        });
+    });
+    
+    document.querySelectorAll('.task-delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const taskId = e.currentTarget.dataset.taskId;
+            allToDos = allToDos.filter(t => t.id !== taskId);
+            saveTodos();
+            loadCalendarTasks();
+            renderDayView();
+            showNotification('🗑️ Task deleted');
+        });
+    });
+    
+    document.querySelectorAll('.day-timeline-hour').forEach(hourEl => {
+        hourEl.addEventListener('click', (e) => {
+            if (e.target.closest('.day-task-item')) return;
+            const timeSlot = hourEl.dataset.time;
+            DOM.quickTaskDate.value = selectedDay;
+            DOM.quickTaskTimeSlot.value = timeSlot;
+            DOM.quickTaskInput.focus();
+        });
+    });
+    
+    document.getElementById('prevDayBtn')?.addEventListener('click', previousDay);
+    document.getElementById('nextDayBtn')?.addEventListener('click', nextDay);
+}
+
+function previousWeek() {
+    if (!selectedWeekStart) return;
+    const newDate = new Date(selectedWeekStart);
+    newDate.setDate(newDate.getDate() - 7);
+    selectedWeekStart = newDate;
+    renderWeekView();
+}
+
+function nextWeek() {
+    if (!selectedWeekStart) return;
+    const newDate = new Date(selectedWeekStart);
+    newDate.setDate(newDate.getDate() + 7);
+    selectedWeekStart = newDate;
+    renderWeekView();
+}
+
+function previousDay() {
+    if (!selectedDay) return;
+    const date = new Date(selectedDay);
+    date.setDate(date.getDate() - 1);
+    selectedDay = date.toISOString().split('T')[0];
+    renderDayView();
+}
+
+function nextDay() {
+    if (!selectedDay) return;
+    const date = new Date(selectedDay);
+    date.setDate(date.getDate() + 1);
+    selectedDay = date.toISOString().split('T')[0];
+    renderDayView();
 }
 
 function previousMonth() {
@@ -915,7 +1352,59 @@ function goToToday() {
     currentDate = new Date();
     currentMonth = currentDate.getMonth();
     currentYear = currentDate.getFullYear();
-    renderCalendar();
+    selectedDay = new Date().toISOString().split('T')[0];
+    selectedWeekStart = new Date();
+    const day = selectedWeekStart.getDay();
+    const diff = selectedWeekStart.getDate() - day + (day === 0 ? -6 : 1);
+    selectedWeekStart = new Date(selectedWeekStart.setDate(diff));
+    
+    if (calendarViewMode === 'month') {
+        renderCalendar();
+    } else if (calendarViewMode === 'week') {
+        renderWeekView();
+    } else if (calendarViewMode === 'day') {
+        renderDayView();
+    }
+}
+
+function showDayTasks(dateStr, tasks) {
+    if (!DOM.selectedDayTasks || !DOM.selectedDayTitle || !DOM.selectedDayList) return;
+    
+    const date = new Date(dateStr);
+    DOM.selectedDayTitle.textContent = date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    DOM.selectedDayList.innerHTML = '';
+    
+    if (tasks.length === 0) {
+        DOM.selectedDayList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No tasks for this day</div>';
+    } else {
+        tasks.sort((a, b) => {
+            if (a.timeSlot && b.timeSlot) {
+                return a.timeSlot.localeCompare(b.timeSlot);
+            }
+            if (a.timeSlot) return -1;
+            if (b.timeSlot) return 1;
+            return 0;
+        }).forEach(task => {
+            const taskItem = document.createElement('div');
+            taskItem.className = `selected-day-task-item ${task.completed ? 'completed' : ''}`;
+            const timeDisplay = task.timeSlot ? formatTimeSlot(task.timeSlot) : 'no time';
+            taskItem.innerHTML = `
+                <i class="fas ${task.completed ? 'fa-check-circle' : task.timeSlot ? 'fa-clock' : 'fa-circle'}" 
+                   style="color: ${task.completed ? '#00b894' : task.timeSlot ? '#0984e3' : '#666'};"></i>
+                <span class="task-text">${escapeHTML(task.text)}</span>
+                <span class="task-time">${timeDisplay}</span>
+            `;
+            DOM.selectedDayList.appendChild(taskItem);
+        });
+    }
+    
+    DOM.selectedDayTasks.style.display = 'block';
 }
 
 // ================= FILES FUNCTIONS =================
@@ -936,7 +1425,6 @@ async function loadUserFiles() {
     if (!user) return;
 
     try {
-        // Load folders from Firestore
         const foldersRef = collection(db, "users", user.uid, "folders");
         const foldersSnapshot = await getDocs(foldersRef);
         
@@ -948,7 +1436,6 @@ async function loadUserFiles() {
             });
         });
 
-        // Load files from Firestore
         const filesRef = collection(db, "users", user.uid, "files");
         const filesSnapshot = await getDocs(filesRef);
         
@@ -973,26 +1460,21 @@ function renderFiles() {
     DOM.filesGrid.innerHTML = '';
     DOM.filesGrid.className = `files-grid ${viewMode === 'list' ? 'list-view' : ''}`;
 
-    // Filter folders and files for current directory
     const currentFolders = folders.filter(f => f.parent === currentFolder);
     const currentFiles = files.filter(f => f.parent === currentFolder);
 
-    // Show empty state if no files or folders
     if (currentFolders.length === 0 && currentFiles.length === 0) {
         showEmptyState();
         return;
     }
 
-    // Hide empty state
     if (DOM.filesEmptyState) DOM.filesEmptyState.style.display = 'none';
 
-    // Render folders
     currentFolders.forEach(folder => {
         const folderElement = createFolderElement(folder);
         DOM.filesGrid.appendChild(folderElement);
     });
 
-    // Render files
     currentFiles.forEach(file => {
         const fileElement = createFileElement(file);
         DOM.filesGrid.appendChild(fileElement);
@@ -1104,7 +1586,6 @@ async function deleteFolder(folderId) {
     if (!user) return;
 
     try {
-        // First, delete all files inside this folder
         const filesRef = collection(db, "users", user.uid, "files");
         const filesQuery = query(filesRef, where("parent", "==", folderId));
         const filesSnapshot = await getDocs(filesQuery);
@@ -1115,22 +1596,18 @@ async function deleteFolder(folderId) {
         });
         await Promise.all(fileDeletions);
         
-        // Then, delete all subfolders recursively
         const foldersRef = collection(db, "users", user.uid, "folders");
         const subfoldersQuery = query(foldersRef, where("parent", "==", folderId));
         const subfoldersSnapshot = await getDocs(subfoldersQuery);
         
         const folderDeletions = [];
         subfoldersSnapshot.forEach((doc) => {
-            // Recursively delete each subfolder
             folderDeletions.push(deleteFolder(doc.id));
         });
         await Promise.all(folderDeletions);
         
-        // Finally, delete the folder itself
         await deleteDoc(doc(db, "users", user.uid, "folders", folderId));
         
-        // If we're currently inside the deleted folder, navigate back to root
         if (currentFolder === folderId || folderStack.includes(folderId)) {
             currentFolder = 'root';
             folderStack = ['root'];
@@ -1317,12 +1794,10 @@ function searchFiles(query) {
 }
 
 function attachFilesEventListeners() {
-    // New folder button
     DOM.newFolderBtn?.addEventListener('click', () => {
         DOM.newFolderModal?.classList.add('active');
     });
 
-    // Upload button
     DOM.uploadFileBtn?.addEventListener('click', () => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -1333,7 +1808,6 @@ function attachFilesEventListeners() {
         input.click();
     });
 
-    // View toggle
     DOM.filesViewToggle?.forEach(btn => {
         btn.addEventListener('click', () => {
             const mode = btn.dataset.view;
@@ -1341,12 +1815,10 @@ function attachFilesEventListeners() {
         });
     });
 
-    // Search input
     DOM.fileSearchInput?.addEventListener('input', (e) => {
         searchFiles(e.target.value);
     });
 
-    // Create folder button
     DOM.createFolderBtn?.addEventListener('click', () => {
         const name = DOM.folderName?.value;
         if (name) {
@@ -1356,7 +1828,6 @@ function attachFilesEventListeners() {
         }
     });
 
-    // Color picker
     DOM.folderColorPicker?.forEach(option => {
         option.addEventListener('click', () => {
             DOM.folderColorPicker.forEach(opt => opt.classList.remove('selected'));
@@ -1364,12 +1835,10 @@ function attachFilesEventListeners() {
         });
     });
 
-    // Close new folder modal
     DOM.closeNewFolderModal?.addEventListener('click', () => {
         DOM.newFolderModal?.classList.remove('active');
     });
 
-    // File preview actions
     DOM.downloadFileBtn?.addEventListener('click', () => {
         const fileId = DOM.filePreviewModal?.dataset.fileId;
         const file = files.find(f => f.id === fileId);
@@ -1397,12 +1866,10 @@ function attachFilesEventListeners() {
         }
     });
 
-    // Close file preview modal
     DOM.closeFilePreview?.addEventListener('click', () => {
         DOM.filePreviewModal?.classList.remove('active');
     });
 
-    // Empty state buttons
     DOM.emptyNewFolderBtn?.addEventListener('click', () => {
         DOM.newFolderModal?.classList.add('active');
     });
@@ -1430,13 +1897,11 @@ function initSettings() {
     
     if (DOM.currentPlan) DOM.currentPlan.textContent = isPro ? 'pro' : 'free';
     
-    // Load saved theme preference
     const savedTheme = localStorage.getItem('kwiktask_theme') || 'light';
     if (savedTheme === 'light' && DOM.themeLight) DOM.themeLight.checked = true;
     if (savedTheme === 'dark' && DOM.themeDark) DOM.themeDark.checked = true;
     if (savedTheme === 'system' && DOM.themeSystem) DOM.themeSystem.checked = true;
     
-    // Load notification preferences
     const notifications = localStorage.getItem('kwiktask_notifications') === 'true';
     if (DOM.notificationsEnabled) DOM.notificationsEnabled.checked = notifications;
     
@@ -1522,16 +1987,26 @@ async function startCheckout() {
 
 // ================= NAVIGATION =================
 function handleNavigation(view) {
-    // Hide all views
     if (DOM.tasksView) DOM.tasksView.style.display = 'none';
+    if (DOM.notesView) DOM.notesView.style.display = 'none';
     if (DOM.analyticsView) DOM.analyticsView.style.display = 'none';
     if (DOM.calendarView) DOM.calendarView.style.display = 'none';
     if (DOM.filesView) DOM.filesView.style.display = 'none';
     if (DOM.settingsView) DOM.settingsView.style.display = 'none';
     
-    // Show selected view
     if (view === 'tasks' && DOM.tasksView) {
         DOM.tasksView.style.display = 'block';
+    }
+    else if (view === 'notes' && DOM.notesView) {
+        DOM.notesView.style.display = 'block';
+        if (isPro) {
+            if (DOM.notesLocked) DOM.notesLocked.style.display = 'none';
+            if (DOM.notesContent) DOM.notesContent.style.display = 'block';
+            loadNotes();
+        } else {
+            if (DOM.notesLocked) DOM.notesLocked.style.display = 'flex';
+            if (DOM.notesContent) DOM.notesContent.style.display = 'none';
+        }
     }
     else if (view === 'analytics' && DOM.analyticsView) {
         DOM.analyticsView.style.display = 'block';
@@ -1574,16 +2049,13 @@ function handleNavigation(view) {
 
 // ================= EVENT LISTENERS =================
 function attachEventListeners() {
-    // Todo form
     DOM.todoForm?.addEventListener("submit", e => {
         e.preventDefault();
         addToDo();
     });
 
-    // Logout
     DOM.logoutBtn?.addEventListener("click", handleLogout);
 
-    // Navigation
     DOM.navItems?.forEach(item => {
         item.addEventListener("click", () => {
             DOM.navItems.forEach(nav => nav.classList.remove('active'));
@@ -1592,7 +2064,6 @@ function attachEventListeners() {
         });
     });
 
-    // Calendar navigation
     DOM.todayBtn?.addEventListener('click', goToToday);
     DOM.prevMonthBtn?.addEventListener('click', previousMonth);
     DOM.nextMonthBtn?.addEventListener('click', nextMonth);
@@ -1600,33 +2071,37 @@ function attachEventListeners() {
         if (DOM.selectedDayTasks) DOM.selectedDayTasks.style.display = 'none';
     });
     
-    // Calendar quick add task - FIXED
     DOM.quickAddTaskBtn?.addEventListener("click", quickAddTask);
     
-    // Allow Enter key in quick task input
     DOM.quickTaskInput?.addEventListener("keypress", (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
             quickAddTask();
         }
     });
+    
+    DOM.calendarViewToggle?.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const view = btn.dataset.view;
+            switchCalendarView(view);
+        });
+    });
 
-    // Modal triggers
     document.getElementById("subscribeBtn")?.addEventListener("click", () => DOM.stripeModal?.classList.add("active"));
     document.getElementById("upgradePromptBtn")?.addEventListener("click", () => DOM.stripeModal?.classList.add("active"));
     document.getElementById("analyticsUpgradeBtn")?.addEventListener("click", () => DOM.stripeModal?.classList.add("active"));
     document.getElementById("calendarUpgradeBtn")?.addEventListener("click", () => DOM.stripeModal?.classList.add("active"));
     document.getElementById("filesUpgradeBtn")?.addEventListener("click", () => DOM.stripeModal?.classList.add("active"));
-    DOM.upgradeFromSettings?.addEventListener("click", (e) => {
+    document.getElementById("notesUpgradeBtn")?.addEventListener("click", () => DOM.stripeModal?.classList.add("active"));
+    
+    if (DOM.upgradeFromSettings) DOM.upgradeFromSettings?.addEventListener("click", (e) => {
         e.preventDefault();
         DOM.stripeModal?.classList.add("active");
     });
 
-    // Close modal
     document.getElementById("closeModal")?.addEventListener("click", () => DOM.stripeModal?.classList.remove("active"));
     document.getElementById("stripeCheckoutBtn")?.addEventListener("click", startCheckout);
     
-    // Success modal
     DOM.closeSuccessModal?.addEventListener("click", () => DOM.successModal?.classList.remove("active"));
     DOM.continueBtn?.addEventListener("click", () => {
         DOM.successModal?.classList.remove("active");
@@ -1635,7 +2110,6 @@ function attachEventListeners() {
         document.querySelector('[data-view="tasks"]')?.classList.add('active');
     });
 
-    // Settings event listeners
     DOM.saveProfileBtn?.addEventListener("click", saveProfile);
     DOM.clearDataBtn?.addEventListener("click", clearAllTasks);
     
@@ -1646,16 +2120,18 @@ function attachEventListeners() {
     DOM.notificationsEnabled?.addEventListener("change", saveNotificationSettings);
     DOM.soundEnabled?.addEventListener("change", saveNotificationSettings);
     
-    // Export data
     DOM.exportDataBtn?.addEventListener("click", exportUserData);
 
-    // Click outside to close modals
     window.addEventListener("click", e => {
         if (e.target === DOM.stripeModal) DOM.stripeModal?.classList.remove("active");
         if (e.target === DOM.successModal) DOM.successModal?.classList.remove("active");
         if (e.target === DOM.newFolderModal) DOM.newFolderModal?.classList.remove("active");
         if (e.target === DOM.filePreviewModal) DOM.filePreviewModal?.classList.remove("active");
+        if (e.target === DOM.noteEditorModal) DOM.noteEditorModal?.classList.remove("active");
+        if (e.target === DOM.deleteNoteModal) DOM.deleteNoteModal?.classList.remove("active");
     });
+    
+    attachNotesEventListeners();
 }
 
 // ================= LOGOUT =================
@@ -1682,12 +2158,326 @@ if (!TEST_MODE) {
                 isPro = true;
                 updateUIForTier();
                 updateToDoList();
+                loadNotes();
                 DOM.successModal?.classList.add("active");
             }
         } catch (error) {
             console.error("Error polling pro status:", error);
         }
     }, 5000);
+}
+
+// ================= ANALYTICS FUNCTIONS =================
+function initAnalytics() {
+    console.log("📊 Initializing analytics with REAL task data...");
+    
+    loadTodos();
+    taskHistory = [...allToDos];
+    
+    setTimeout(() => {
+        renderAnalytics();
+        renderCharts();
+        renderProductivityInsights();
+    }, 100);
+}
+
+function renderAnalytics() {
+    const total = taskHistory.length;
+    const completed = taskHistory.filter(t => t.completed).length;
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const recentTasks = taskHistory.filter(t => {
+        if (!t.createdAt) return false;
+        return new Date(t.createdAt) > thirtyDaysAgo;
+    });
+    const avgPerDay = recentTasks.length > 0 ? (recentTasks.length / 30).toFixed(1) : 0;
+    
+    calculateStreaks();
+    
+    if (DOM.totalTasksStat) DOM.totalTasksStat.textContent = total;
+    if (DOM.completedTasksStat) DOM.completedTasksStat.textContent = completed;
+    if (DOM.completionRateStat) DOM.completionRateStat.textContent = `${completionRate}%`;
+    if (DOM.avgTasksStat) DOM.avgTasksStat.textContent = avgPerDay;
+    if (DOM.currentStreakStat) DOM.currentStreakStat.textContent = streakData.current;
+    if (DOM.longestStreakStat) DOM.longestStreakStat.textContent = streakData.longest;
+}
+
+function calculateStreaks() {
+    if (taskHistory.length === 0) {
+        streakData = { current: 0, longest: 0 };
+        return;
+    }
+    
+    const completedDates = taskHistory
+        .filter(t => t.completed && t.completedAt)
+        .map(t => new Date(t.completedAt).toDateString())
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .sort((a, b) => new Date(a) - new Date(b));
+    
+    if (completedDates.length === 0) {
+        streakData = { current: 0, longest: 0 };
+        return;
+    }
+    
+    let currentStreak = 0;
+    let longestStreak = 1;
+    let streakCount = 1;
+    
+    for (let i = 1; i < completedDates.length; i++) {
+        const prevDate = new Date(completedDates[i - 1]);
+        const currDate = new Date(completedDates[i]);
+        const diffDays = Math.round((currDate - prevDate) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 1) {
+            streakCount++;
+            longestStreak = Math.max(longestStreak, streakCount);
+        } else {
+            streakCount = 1;
+        }
+    }
+    
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    
+    if (completedDates.includes(today)) {
+        currentStreak = 1;
+        let checkDate = yesterday;
+        let daysBack = 1;
+        
+        while (completedDates.includes(checkDate)) {
+            currentStreak++;
+            daysBack++;
+            checkDate = new Date(Date.now() - (daysBack * 86400000)).toDateString();
+        }
+    } else if (completedDates.includes(yesterday)) {
+        currentStreak = 1;
+        let checkDate = new Date(Date.now() - (2 * 86400000)).toDateString();
+        let daysBack = 2;
+        
+        while (completedDates.includes(checkDate)) {
+            currentStreak++;
+            daysBack++;
+            checkDate = new Date(Date.now() - (daysBack * 86400000)).toDateString();
+        }
+    }
+    
+    streakData = { 
+        current: currentStreak, 
+        longest: Math.max(longestStreak, currentStreak) 
+    };
+}
+
+function renderCharts() {
+    if (typeof Chart === 'undefined') {
+        console.warn("Chart.js not loaded");
+        return;
+    }
+    
+    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weeklyData = [0, 0, 0, 0, 0, 0, 0];
+    
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+    
+    taskHistory.forEach(task => {
+        if (task.completed && task.completedAt) {
+            const taskDate = new Date(task.completedAt);
+            if (taskDate > sevenDaysAgo) {
+                const dayIndex = taskDate.getDay();
+                weeklyData[dayIndex]++;
+            }
+        }
+    });
+    
+    if (DOM.weeklyChart) {
+        if (window.weeklyChartInstance) {
+            window.weeklyChartInstance.destroy();
+        }
+        
+        const ctx = DOM.weeklyChart.getContext('2d');
+        window.weeklyChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: weekDays,
+                datasets: [{
+                    label: 'Tasks Completed',
+                    data: weeklyData,
+                    backgroundColor: '#000',
+                    borderRadius: 6,
+                    barPercentage: 0.7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { backgroundColor: '#000' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f0f0f0' },
+                        ticks: { stepSize: 1 }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+    
+    const timeSlots = [0, 0, 0, 0];
+    
+    taskHistory.forEach(task => {
+        if (task.completed && task.completedAt) {
+            const hour = new Date(task.completedAt).getHours();
+            if (hour >= 5 && hour < 12) timeSlots[0]++;
+            else if (hour >= 12 && hour < 17) timeSlots[1]++;
+            else if (hour >= 17 && hour < 21) timeSlots[2]++;
+            else timeSlots[3]++;
+        }
+    });
+    
+    const hasData = timeSlots.some(slot => slot > 0);
+    
+    if (DOM.timeOfDayChart) {
+        if (window.timeChartInstance) {
+            window.timeChartInstance.destroy();
+        }
+        
+        const ctx = DOM.timeOfDayChart.getContext('2d');
+        window.timeChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Morning (5am-12pm)', 'Afternoon (12pm-5pm)', 'Evening (5pm-9pm)', 'Night (9pm-5am)'],
+                datasets: [{
+                    data: hasData ? timeSlots : [25, 25, 25, 25],
+                    backgroundColor: ['#000', '#333', '#666', '#999'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { 
+                        position: 'bottom',
+                        labels: { boxWidth: 12, padding: 15 }
+                    },
+                    tooltip: { backgroundColor: '#000' }
+                },
+                cutout: '65%'
+            }
+        });
+    }
+}
+
+function renderProductivityInsights() {
+    if (!DOM.productivityInsights) return;
+    
+    const total = taskHistory.length;
+    const completed = taskHistory.filter(t => t.completed).length;
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    
+    let insights = [];
+    
+    if (total === 0) {
+        insights.push(`<li><i class="fas fa-plus-circle"></i> Add your first task to see insights!</li>`);
+    } else {
+        if (streakData.current > 0) {
+            insights.push(`<li><i class="fas fa-fire"></i> ${streakData.current} day streak! Keep it up! 🔥</li>`);
+        }
+        
+        if (streakData.longest > 0) {
+            insights.push(`<li><i class="fas fa-trophy"></i> Longest streak: ${streakData.longest} days 🏆</li>`);
+        }
+        
+        if (completionRate > 70) {
+            insights.push(`<li><i class="fas fa-chart-line"></i> ${completionRate}% completion rate - you're crushing it! 🎯</li>`);
+        } else if (completionRate < 30 && total > 5) {
+            insights.push(`<li><i class="fas fa-lightbulb"></i> Try breaking down large tasks into smaller ones</li>`);
+        }
+        
+        const mostProductiveDay = getMostProductiveDay();
+        if (mostProductiveDay) {
+            insights.push(`<li><i class="fas fa-calendar-check"></i> Most productive on ${mostProductiveDay}s 📊</li>`);
+        }
+        
+        const bestTime = getBestTimeOfDay();
+        if (bestTime) {
+            insights.push(`<li><i class="fas fa-clock"></i> Best time to work: ${bestTime} ⏰</li>`);
+        }
+    }
+    
+    if (insights.length === 0) {
+        insights.push(`<li><i class="fas fa-chart-line"></i> Keep going! Your productivity will grow 📈</li>`);
+    }
+    
+    DOM.productivityInsights.innerHTML = insights.join('');
+}
+
+function getMostProductiveDay() {
+    const dayCount = [0, 0, 0, 0, 0, 0, 0];
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    
+    taskHistory.forEach(task => {
+        if (task.completed && task.completedAt) {
+            const day = new Date(task.completedAt).getDay();
+            dayCount[day]++;
+        }
+    });
+    
+    const max = Math.max(...dayCount);
+    if (max === 0) return null;
+    
+    const index = dayCount.indexOf(max);
+    return days[index];
+}
+
+function getBestTimeOfDay() {
+    const timeSlots = [0, 0, 0, 0];
+    const slots = ['Morning', 'Afternoon', 'Evening', 'Night'];
+    
+    taskHistory.forEach(task => {
+        if (task.completed && task.completedAt) {
+            const hour = new Date(task.completedAt).getHours();
+            if (hour >= 5 && hour < 12) timeSlots[0]++;
+            else if (hour >= 12 && hour < 17) timeSlots[1]++;
+            else if (hour >= 17 && hour < 21) timeSlots[2]++;
+            else timeSlots[3]++;
+        }
+    });
+    
+    const max = Math.max(...timeSlots);
+    if (max === 0) return null;
+    
+    const index = timeSlots.indexOf(max);
+    return slots[index];
+}
+
+function exportUserData() {
+    const csv = [
+        'Task,Completed,Created At,Completed At,Priority,Time Slot',
+        ...allToDos.map(t => 
+            `"${t.text}",${t.completed},${t.createdAt || ''},${t.completedAt || ''},${t.priority || 'medium'},${t.timeSlot || ''}`
+        )
+    ].join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kwiktask-export-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    showNotification('✅ Data exported successfully!');
 }
 
 // ===== GLOBAL EXPORTS =====
@@ -1701,6 +2491,18 @@ window.createFolder = createFolder;
 window.uploadFile = uploadFile;
 window.deleteFile = deleteFile;
 window.renameFile = renameFile;
+window.loadNotes = loadNotes;
+window.saveNote = saveNote;
+window.deleteNote = deleteNote;
+window.openNewNoteModal = openNewNoteModal;
+window.switchCalendarView = switchCalendarView;
+window.renderWeekView = renderWeekView;
+window.renderDayView = renderDayView;
+window.previousWeek = previousWeek;
+window.nextWeek = nextWeek;
+window.previousDay = previousDay;
+window.nextDay = nextDay;
+window.goToToday = goToToday;
 
 // Add CSS animations
 const style = document.createElement('style');
@@ -1724,6 +2526,27 @@ style.textContent = `
             opacity: 0;
             transform: translate(-50%, 20px);
         }
+    }
+    
+    .scheduled-count {
+        color: #0984e3;
+        font-size: 10px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .scheduled-count:before {
+        content: '⏰';
+        font-size: 10px;
+    }
+    .calendar-weekday {
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .calendar-weekday:hover {
+        background: rgba(0,0,0,0.05);
+        border-radius: 100px;
     }
 `;
 document.head.appendChild(style);

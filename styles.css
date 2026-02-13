@@ -11,6 +11,8 @@
     --text-color: #1a1a1a;
     --card-bg: #ffffff;
     --border-color: #f0f0f0;
+    --scheduled-color: #0984e3;
+    --hover-bg: #fcfcfc;
 }
 
 body {
@@ -145,7 +147,6 @@ body {
     line-height: 1.2;
 }
 
-
 @media (max-width: 600px) {
     .navbar {
         flex-wrap: wrap;
@@ -183,19 +184,6 @@ body {
         padding: 2px 4px;
         margin-left: 2px;
     }
-}
-
-/* Pro tag in navbar */
-.pro-tag {
-    background: #000;
-    color: white;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 100px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-left: 4px;
 }
 
 /* ===== PRO LOCKED FEATURES ===== */
@@ -892,7 +880,6 @@ h1 {
     fill: #ff4444;
 }
 
-/* If using Font Awesome icons instead of SVG */
 .todo .delete-button i {
     font-size: 18px;
     color: #666;
@@ -1408,7 +1395,6 @@ h1 {
     color: #ff4444;
 }
 
-/* Update header-right to handle the new button */
 .header-right {
     display: flex;
     align-items: center;
@@ -1679,7 +1665,7 @@ h1 {
     font-size: 14px;
 }
 
-/* ===== INTERACTIVE CALENDAR STYLES ===== */
+/* ===== INTERACTIVE CALENDAR STYLES - UPDATED WITH TIME SLOTS & WEEK/DAY VIEWS ===== */
 .calendar-header {
     display: flex;
     justify-content: space-between;
@@ -1754,6 +1740,7 @@ h1 {
     font-size: 12px;
 }
 
+/* Calendar View Toggle */
 .calendar-view-toggle {
     display: flex;
     gap: 8px;
@@ -1790,14 +1777,17 @@ h1 {
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
+/* Calendar Grid Container */
 .calendar-grid-container {
     background: white;
     border: 1px solid #f0f0f0;
     border-radius: 24px;
     padding: 24px;
     margin-bottom: 24px;
+    transition: all 0.2s;
 }
 
+/* Month View */
 .calendar-weekdays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -1813,6 +1803,14 @@ h1 {
     padding: 8px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 100px;
+}
+
+.calendar-weekday:hover {
+    background: rgba(0,0,0,0.05);
+    color: #000;
 }
 
 .calendar-grid {
@@ -1892,6 +1890,20 @@ h1 {
     font-size: 10px;
 }
 
+.scheduled-count {
+    color: #0984e3;
+    font-size: 10px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.scheduled-count:before {
+    content: '⏰';
+    font-size: 10px;
+}
+
 .completed-count {
     color: #00b894;
     font-size: 10px;
@@ -1906,25 +1918,310 @@ h1 {
     font-size: 10px;
 }
 
-/* Priority Indicators */
-.priority-indicator {
-    display: inline-block;
+/* ===== WEEK VIEW STYLES ===== */
+.calendar-week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.calendar-week-day {
+    background: white;
+    border: 1px solid #f0f0f0;
+    border-radius: 16px;
+    padding: 12px;
+    min-height: 300px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.calendar-week-day:hover {
+    border-color: #000;
+    background: #fcfcfc;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+}
+
+.calendar-week-day.today {
+    border: 2px solid #000;
+    background: #fff9e6;
+}
+
+.calendar-week-day .day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.calendar-week-day .day-name {
+    font-weight: 600;
+    color: #666;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+.calendar-week-day .day-number {
+    font-weight: 700;
+    color: #000;
+    font-size: 16px;
+}
+
+.day-tasks-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    overflow-y: auto;
+    max-height: 250px;
+}
+
+.week-task-item {
+    background: #f5f5f5;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+}
+
+.week-task-item:hover {
+    background: #eaeaea;
+    transform: scale(0.98);
+}
+
+.week-task-item.completed {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
+.week-task-item .task-time {
+    font-weight: 700;
+    color: #0984e3;
+    font-size: 11px;
+    background: white;
+    padding: 2px 6px;
+    border-radius: 100px;
+    white-space: nowrap;
+}
+
+.week-task-item.unscheduled .task-time {
+    color: #666;
+    background: transparent;
+    padding: 0;
+}
+
+.week-task-item .task-priority {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    margin-right: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
 }
 
-.priority-high {
-    background: #ff4444;
+.no-tasks {
+    color: #999;
+    font-size: 11px;
+    text-align: center;
+    padding: 16px 0;
+    font-style: italic;
 }
 
-.priority-medium {
-    background: #f59e0b;
+.week-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
 }
 
-.priority-low {
-    background: #00b894;
+.week-nav-btn {
+    background: white;
+    border: 1px solid #eaeaea;
+    padding: 8px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.week-nav-btn:hover {
+    background: #f5f5f5;
+    border-color: #ddd;
+    color: #333;
+}
+
+/* ===== DAY VIEW STYLES ===== */
+.day-view-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.day-view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.day-nav-btn {
+    background: white;
+    border: 1px solid #eaeaea;
+    padding: 8px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.day-nav-btn:hover {
+    background: #f5f5f5;
+    border-color: #ddd;
+    color: #333;
+}
+
+.day-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.day-timeline-hour {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 12px;
+    padding: 8px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.day-timeline-hour:hover {
+    background: #fafafa;
+}
+
+.hour-label {
+    font-weight: 600;
+    color: #666;
+    font-size: 13px;
+    padding-top: 4px;
+}
+
+.hour-tasks {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.day-task-item {
+    background: #f5f5f5;
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.day-task-item:hover {
+    background: #eaeaea;
+}
+
+.day-task-item.completed {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
+.day-task-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #000;
+}
+
+.day-task-item .task-text {
+    flex: 1;
+    font-size: 14px;
+    color: #1a1a1a;
+}
+
+.task-delete-btn {
+    background: transparent;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.task-delete-btn:hover {
+    color: #ff4444;
+    background: white;
+}
+
+.unscheduled-tasks-section {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 2px dashed #ddd;
+}
+
+.unscheduled-tasks-section h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ===== TIME SLOT DROPDOWN ===== */
+.quick-task-timeslot {
+    flex: 1;
+    min-width: 140px;
+    padding: 12px 16px;
+    border: 1.5px solid #eaeaea;
+    border-radius: 100px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    background: white;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 16px;
+    padding-right: 48px;
+    cursor: pointer;
+}
+
+.quick-task-timeslot:focus {
+    outline: none;
+    border-color: #000;
 }
 
 /* Quick Add Task */
@@ -2112,7 +2409,48 @@ h1 {
     font-weight: 500;
 }
 
-/* Calendar Legend */
+/* Priority Indicators */
+.priority-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+}
+
+.priority-high {
+    background: #ff4444;
+}
+
+.priority-medium {
+    background: #f59e0b;
+}
+
+.priority-low {
+    background: #00b894;
+}
+
+.task-priority {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.priority-high {
+    background: #ff4444;
+}
+
+.priority-medium {
+    background: #f59e0b;
+}
+
+.priority-low {
+    background: #00b894;
+}
+
+/* ===== CALENDAR LEGEND UPDATED ===== */
 .calendar-legend {
     display: flex;
     gap: 24px;
@@ -2146,6 +2484,12 @@ h1 {
 
 .legend-dot.has-tasks {
     background: #f59e0b;
+    width: 12px;
+    height: 12px;
+}
+
+.legend-dot.scheduled {
+    background: #0984e3;
     width: 12px;
     height: 12px;
 }
@@ -2223,28 +2567,6 @@ h1 {
     background: #f5f5f5;
     padding: 4px 10px;
     border-radius: 100px;
-}
-
-/* Calendar Placeholder */
-.calendar-placeholder {
-    background: #fafafa;
-    border: 1px solid #f0f0f0;
-    border-radius: 24px;
-    padding: 60px 32px;
-    text-align: center;
-    color: #999;
-}
-
-.calendar-placeholder i {
-    font-size: 48px;
-    margin-bottom: 16px;
-    color: #ddd;
-}
-
-.calendar-placeholder p {
-    font-size: 16px;
-    color: #666;
-    margin: 0;
 }
 
 /* ===== FILES PAGE STYLES ===== */
@@ -2731,7 +3053,6 @@ h1 {
     color: #000;
 }
 
-/* Folder delete button */
 .folder-item {
     position: relative;
 }
@@ -2762,18 +3083,6 @@ h1 {
     background: #ff4444;
     color: white;
     border-color: #ff4444;
-}
-
-/* Dark theme support */
-.dark-theme .folder-delete-btn {
-    background: #3d3d3d;
-    border-color: #666;
-    color: #ccc;
-}
-
-.dark-theme .folder-delete-btn:hover {
-    background: #ff4444;
-    color: white;
 }
 
 .file-preview-actions {
@@ -2815,7 +3124,507 @@ h1 {
     color: white;
 }
 
-/* ===== DARK THEME ===== */
+/* ===== NOTES PAGE STYLES (PRO FEATURE) ===== */
+.notes-content {
+    animation: fadeIn 0.3s ease;
+}
+
+.notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.notes-header-left {
+    display: flex;
+    gap: 12px;
+}
+
+.notes-action-btn {
+    background: white;
+    border: 1.5px solid #eaeaea;
+    padding: 12px 20px;
+    border-radius: 100px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Inter', sans-serif;
+}
+
+.notes-action-btn.primary {
+    background: black;
+    border-color: black;
+    color: white;
+}
+
+.notes-action-btn.primary:hover {
+    background: #333;
+    border-color: #333;
+    transform: scale(0.98);
+}
+
+.notes-action-btn:hover {
+    background: #f5f5f5;
+    border-color: #ddd;
+    color: #333;
+}
+
+.notes-header-right {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.notes-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.notes-search i {
+    position: absolute;
+    left: 16px;
+    color: #999;
+    font-size: 14px;
+}
+
+.notes-search input {
+    padding: 12px 16px 12px 44px;
+    border: 1.5px solid #eaeaea;
+    border-radius: 100px;
+    font-size: 14px;
+    width: 240px;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+}
+
+.notes-search input:focus {
+    outline: none;
+    border-color: #000;
+}
+
+.notes-view-toggle {
+    display: flex;
+    gap: 8px;
+    background: #f5f5f5;
+    padding: 4px;
+    border-radius: 100px;
+}
+
+.notes-view-toggle .view-toggle-btn {
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    border-radius: 100px;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notes-view-toggle .view-toggle-btn.active {
+    background: white;
+    color: #000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.notes-folders {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+}
+
+.folder-chip {
+    background: #f2f2f5;
+    border: none;
+    padding: 0.4rem 1.2rem;
+    border-radius: 30px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+}
+
+.folder-chip.active {
+    background: #1e1e1e;
+    color: white;
+}
+
+.notes-container {
+    min-height: 200px;
+    margin-bottom: 32px;
+}
+
+.notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+}
+
+.notes-grid.list-view {
+    grid-template-columns: 1fr;
+}
+
+.note-card {
+    background: white;
+    border: 1px solid #f0f0f0;
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    transition: all 0.2s;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+}
+
+.note-card:hover {
+    border-color: #ddd;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.02);
+    transform: translateY(-2px);
+}
+
+.notes-grid.list-view .note-card {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+}
+
+.notes-grid.list-view .note-card-header {
+    margin-bottom: 0;
+    min-width: 140px;
+}
+
+.notes-grid.list-view .note-card-title {
+    margin-bottom: 0;
+    flex: 1;
+}
+
+.notes-grid.list-view .note-card-preview {
+    display: none;
+}
+
+.note-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+}
+
+.note-folder-badge {
+    background: #f5f5f7;
+    padding: 0.2rem 0.8rem;
+    border-radius: 40px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #444;
+    text-transform: capitalize;
+}
+
+.note-card-menu {
+    background: transparent;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.note-card-menu:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.note-card-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: #000;
+    line-height: 1.4;
+}
+
+.note-card-preview {
+    color: #666;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-bottom: 1.2rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex: 1;
+}
+
+.note-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #8e8e93;
+    font-size: 0.75rem;
+    border-top: 1px solid #f2f2f2;
+    padding-top: 1rem;
+    margin-top: auto;
+}
+
+.note-date {
+    font-weight: 500;
+}
+
+.notes-empty-state {
+    text-align: center;
+    padding: 60px 32px;
+    background: #fafafa;
+    border-radius: 24px;
+    border: 1px dashed #ddd;
+    margin: 2rem 0;
+}
+
+.notes-empty-state .empty-state-icon i {
+    font-size: 48px;
+    color: #ccc;
+    margin-bottom: 16px;
+}
+
+.notes-empty-state h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.notes-empty-state p {
+    color: #999;
+    margin-bottom: 24px;
+}
+
+.recent-notes-section {
+    margin-top: 32px;
+}
+
+.recent-notes-list {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-radius: 18px;
+    border: 1px solid #f0f0f0;
+    overflow: hidden;
+}
+
+.recent-note-item {
+    padding: 0.9rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #f8f8f8;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.recent-note-item:last-child {
+    border-bottom: none;
+}
+
+.recent-note-item:hover {
+    background: #fafafa;
+}
+
+.recent-note-item i {
+    color: #666;
+    width: 20px;
+    font-size: 16px;
+}
+
+.recent-note-item span {
+    margin-left: auto;
+    color: #999;
+    font-size: 0.75rem;
+}
+
+/* Note Editor Modal */
+.note-editor-content {
+    max-width: 600px;
+    padding: 32px;
+}
+
+.note-editor-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.note-editor-title i {
+    font-size: 20px;
+    color: #666;
+}
+
+.note-editor-title input {
+    border: none;
+    font-size: 1.4rem;
+    font-weight: 700;
+    padding: 0.2rem 0;
+    width: 100%;
+    background: transparent;
+    font-family: 'Inter', sans-serif;
+    color: #000;
+}
+
+.note-editor-title input:focus {
+    outline: none;
+}
+
+.note-meta-bar {
+    display: flex;
+    gap: 1rem;
+    margin: 1.5rem 0 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.note-folder-select {
+    padding: 0.6rem 1.8rem 0.6rem 1rem;
+    border: 1.5px solid #eaeaea;
+    border-radius: 100px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #333;
+    background: white;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 14px;
+    padding-right: 36px;
+    font-family: 'Inter', sans-serif;
+}
+
+.note-editor-body {
+    margin-bottom: 1rem;
+}
+
+#noteBodyTextarea {
+    width: 100%;
+    min-height: 250px;
+    padding: 1rem;
+    border-radius: 16px;
+    border: 1.5px solid #eaeaea;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    resize: vertical;
+    background: #fefefe;
+    font-family: 'Inter', sans-serif;
+    transition: border 0.2s;
+}
+
+#noteBodyTextarea:focus {
+    outline: none;
+    border-color: #000;
+}
+
+.note-format-toolbar {
+    margin-top: 0.8rem;
+    display: flex;
+    gap: 0.3rem;
+    background: #f5f5f7;
+    padding: 0.4rem;
+    border-radius: 40px;
+    width: fit-content;
+}
+
+.format-btn {
+    background: transparent;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 30px;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.format-btn:hover {
+    background: #e0e0e0;
+}
+
+.separator {
+    width: 1px;
+    background: #ddd;
+    margin: 0 0.2rem;
+}
+
+.note-editor-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.8rem;
+    margin-top: 1.5rem;
+}
+
+.primary-btn {
+    background: #1e1e1e;
+    color: white;
+    border: none;
+    padding: 0.7rem 1.8rem;
+    border-radius: 40px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.primary-btn:hover {
+    background: #333;
+    transform: scale(0.98);
+}
+
+.secondary-btn {
+    background: transparent;
+    border: 1.5px solid #ddd;
+    padding: 0.7rem 1.8rem;
+    border-radius: 40px;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+}
+
+.secondary-btn:hover {
+    background: #f5f5f5;
+}
+
+.delete-confirm {
+    max-width: 400px;
+}
+
+.warning-text {
+    color: #ff4444;
+    font-size: 0.85rem;
+    margin-top: 8px;
+}
+
+/* ===== DARK THEME UPDATES ===== */
 .dark-theme {
     background: #1a1a1a;
     color: #ffffff;
@@ -2830,6 +3639,7 @@ h1 {
 .dark-theme .settings-card,
 .dark-theme .calendar-day,
 .dark-theme .calendar-grid-container,
+.dark-theme .calendar-week-day,
 .dark-theme .quick-add-task,
 .dark-theme .selected-day-tasks,
 .dark-theme .folder-item,
@@ -2851,7 +3661,8 @@ h1 {
 .dark-theme .day-number,
 .dark-theme .folder-name,
 .dark-theme .file-name,
-.dark-theme .recent-file-name {
+.dark-theme .recent-file-name,
+.dark-theme .calendar-week-day .day-number {
     color: #fff;
 }
 
@@ -2862,33 +3673,51 @@ h1 {
 .dark-theme .chart-period,
 .dark-theme .calendar-weekday,
 .dark-theme .legend-item,
-.dark-theme .calendar-stats {
+.dark-theme .calendar-stats,
+.dark-theme .calendar-week-day .day-name {
     color: #ccc;
 }
 
-.dark-theme .calendar-day.today {
+.dark-theme .calendar-day.today,
+.dark-theme .calendar-week-day.today {
     background: #3d3d3d;
     border-color: #fff;
 }
 
 .dark-theme .quick-add-form input,
 .dark-theme .quick-add-form select,
-.dark-theme .files-search input {
+.dark-theme .quick-task-timeslot,
+.dark-theme .files-search input,
+.dark-theme .notes-search input,
+.dark-theme .note-folder-select,
+.dark-theme #noteBodyTextarea {
     background: #3d3d3d;
     border-color: #404040;
     color: #fff;
 }
 
-.dark-theme .quick-add-form input::placeholder {
-    color: #999;
+.dark-theme .quick-add-form input::placeholder,
+.dark-theme .quick-task-timeslot::placeholder,
+.dark-theme .notes-search input::placeholder,
+.dark-theme #noteBodyTextarea::placeholder {
+    color: #aaa;
 }
 
-.dark-theme .task-indicator {
+.dark-theme .task-indicator,
+.dark-theme .week-task-item,
+.dark-theme .day-task-item {
     background: #3d3d3d;
 }
 
-.dark-theme .task-count {
+.dark-theme .task-count,
+.dark-theme .week-task-item .task-text,
+.dark-theme .day-task-item .task-text {
     color: #fff;
+}
+
+.dark-theme .week-task-item .task-time {
+    background: #2d2d2d;
+    color: #74b9ff;
 }
 
 .dark-theme .insights-list li,
@@ -2902,12 +3731,80 @@ h1 {
     color: #ccc;
 }
 
-.dark-theme .files-empty-state {
+.dark-theme .files-empty-state,
+.dark-theme .notes-empty-state {
     background: #2d2d2d;
     border-color: #404040;
 }
 
-/* ===== RESPONSIVE ===== */
+.dark-theme .day-timeline-hour:hover {
+    background: #3d3d3d;
+}
+
+.dark-theme .hour-label {
+    color: #ccc;
+}
+
+.dark-theme .calendar-weekday:hover {
+    background: #3d3d3d;
+    color: #fff;
+}
+
+.dark-theme .note-card,
+.dark-theme .recent-notes-list,
+.dark-theme .note-editor-content {
+    background: #2d2d2d;
+    border-color: #404040;
+}
+
+.dark-theme .note-card-title,
+.dark-theme .note-editor-title input {
+    color: #fff;
+}
+
+.dark-theme .note-card-preview {
+    color: #ccc;
+}
+
+.dark-theme .note-folder-badge {
+    background: #3d3d3d;
+    color: #ddd;
+}
+
+.dark-theme .folder-chip {
+    background: #3d3d3d;
+    color: #ddd;
+}
+
+.dark-theme .folder-chip.active {
+    background: #000;
+    color: white;
+}
+
+.dark-theme .note-format-toolbar {
+    background: #3d3d3d;
+}
+
+.dark-theme .format-btn {
+    color: #ccc;
+}
+
+.dark-theme .format-btn:hover {
+    background: #555;
+}
+
+.dark-theme .folder-delete-btn {
+    background: #3d3d3d;
+    border-color: #666;
+    color: #ccc;
+}
+
+.dark-theme .folder-delete-btn:hover {
+    background: #ff4444;
+    color: white;
+}
+
+/* ===== RESPONSIVE UPDATES ===== */
 @media (max-width: 768px) {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -2943,24 +3840,42 @@ h1 {
     
     .quick-add-form input,
     .quick-add-form select,
+    .quick-task-timeslot,
     .quick-add-btn {
         width: 100%;
     }
     
-    .files-header {
+    .calendar-week-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .calendar-week-day {
+        min-height: auto;
+    }
+    
+    .day-timeline-hour {
+        grid-template-columns: 70px 1fr;
+    }
+    
+    .files-header,
+    .notes-header {
         flex-direction: column;
         align-items: stretch;
     }
     
-    .files-header-right {
+    .files-header-right,
+    .notes-header-right {
         flex-direction: column;
     }
     
-    .files-search input {
+    .files-search input,
+    .notes-search input {
         width: 100%;
     }
     
-    .files-grid {
+    .files-grid,
+    .notes-grid {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     }
     
@@ -3058,11 +3973,37 @@ h1 {
         gap: 16px;
     }
     
-    .files-header-left {
+    .calendar-week-day {
+        padding: 16px;
+    }
+    
+    .day-view-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .day-nav-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .day-timeline-hour {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .hour-label {
+        padding-bottom: 4px;
+        border-bottom: 1px dashed #eee;
+    }
+    
+    .files-header-left,
+    .notes-header-left {
         width: 100%;
     }
     
-    .files-action-btn {
+    .files-action-btn,
+    .notes-action-btn {
         flex: 1;
         justify-content: center;
     }
@@ -3076,7 +4017,8 @@ h1 {
         width: 100%;
     }
     
-    .files-grid {
+    .files-grid,
+    .notes-grid {
         grid-template-columns: 1fr;
     }
     
@@ -3087,6 +4029,34 @@ h1 {
     .empty-state-btn {
         width: 100%;
         justify-content: center;
+    }
+    
+    .notes-folders {
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .folder-chip {
+        white-space: nowrap;
+    }
+    
+    .note-editor-content {
+        padding: 24px;
+    }
+    
+    .note-editor-title input {
+        font-size: 1.2rem;
+    }
+    
+    .note-meta-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .note-folder-select {
+        width: 100%;
     }
 }
 
@@ -3138,6 +4108,10 @@ h1 {
         padding: 12px 16px;
         font-size: 14px;
     }
+    
+    .notes-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ===== ANIMATIONS ===== */
@@ -3162,22 +4136,23 @@ h1 {
 }
 
 @keyframes slideUp {
-        from {
-            opacity: 0;
-            transform: translate(-50%, 20px);
-        }
-        to {
-            opacity: 1;
-            transform: translate(-50%, 0);
-        }
+    from {
+        opacity: 0;
+        transform: translate(-50%, 20px);
     }
-    @keyframes slideDown {
-        from {
-            opacity: 1;
-            transform: translate(-50%, 0);
-        }
-        to {
-            opacity: 0;
-            transform: translate(-50%, 20px);
-        }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
     }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+}
